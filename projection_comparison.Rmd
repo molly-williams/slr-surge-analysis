@@ -10,5 +10,118 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+# Load packages
+```{r}
+library(tidyverse)
+library(here)
+library(readr)
+library(plyr)
+
+```
+
+
+
+# Import raw data from various climate models
+
+```{r read_data}
+
+
+files <- list.files(file.path(here()), pattern = ".txt")
+
+
+for (i in 1:length(files)) 
+  assign(files[i], read.table(files[i], 
+                              header = FALSE,
+                              col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"),
+                              skipNul = TRUE))
+
+
+# Load one at a time: 
+proj01_raw <- read.table("proj01_raw.txt", 
+                              header = FALSE,
+                              col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"),
+                              skipNul = TRUE)
+
+
+# options for combining into a single df (but doesn't differentiate between models) - load plyr first
+
+#raw_data_full = ldply(files, read.table, header = FALSE,
+                  col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+                                 "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"))
+
+
+
+```
+
+
+
+
+# Filter data to years of interest and select daily max only
+```{r}
+
+raw_dfs <- c(proj01_raw.txt, proj02_raw.txt, proj03_raw.txt, proj04_raw.txt, proj05_raw.txt, proj06_raw.txt, proj07_raw.txt, proj08_raw.txt, proj09_raw.txt, proj10_raw.txt, proj11_raw.txt, proj12_raw.txt, proj13_raw.txt, proj14_raw.txt, proj15_raw.txt, proj16_raw)
+
+
+for(i in raw_dfs) {
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2011) %>% 
+  select(YEAR, MONTH, DAY, HTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarise(HTOTmax = max(HTOT)) %>% 
+  ungroup()
+}
+  
+  
+  
+proj01_max <- proj01_raw %>% 
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2011) %>% 
+  select(YEAR, MONTH, DAY, HTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarize(HTOTmax = max(HTOT)) %>% 
+  ungroup()
+
+proj02_max <- proj02_raw.txt %>% 
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2011) %>% 
+  select(YEAR, MONTH, DAY, HTOT) %>%
+  group_by(YEAR, MONTH, DAY,) %>% 
+  summarise(HTOTmax = max(HTOT)) %>% 
+  ungroup()
+
+proj03_max <- proj03_raw %>% 
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2011) %>% 
+  select(YEAR, MONTH, DAY, HTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarise(HTOTmax = max(HTOT)) %>% 
+  ungroup()
+
+proj04_max <- proj04_raw %>% 
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2011) %>% 
+  select(YEAR, MONTH, DAY, HTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarise(HTOTmax = max(HTOT)) %>% 
+  ungroup()
+
+
+
+proj_test <- proj02_raw %>%
+  filter(YEAR == 1980) %>%
+  filter(MONTH == 1) %>% 
+  filter(DAY == 3)
+
+```
+
+
+```{r}
+
+```
+
+
+
 
 
