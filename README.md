@@ -23,3 +23,15 @@ Key for projection models:
 
 
 Constant (from MLR) = 0.008 
+
+
+Each projection has the following components:
+
+- HTOT is the total water level height including all terms
+- HAST is predicted astronomical tide
+- HSLR is the SLR scenario
+- HMETTOT is the total height due to meteorological/climate influences
+- HMETSLP - meteorological component due to local SLP fluctuations
+- HMETSST - component due to local SST fluctuations 
+- HMETENSO - component due to ENSO
+- HMETWIND - component due to local winds

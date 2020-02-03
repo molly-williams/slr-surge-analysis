@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(readr)
-library(plyr)
+library(purrr)
 
 ```
 
@@ -25,31 +25,33 @@ library(plyr)
 
 ```{r read_data}
 
+# Option 1: read in raw climate models into separate dfs using a loop (best)
 
 files <- list.files(file.path(here()), pattern = ".txt")
 
 
-for (i in 1:length(files)) 
+for (i in 1:length(files)) {
   assign(files[i], read.table(files[i], 
                               header = FALSE,
                               col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
-                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"),
-                              skipNul = TRUE))
+                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND")))
+}
 
 
-# Load one at a time: 
-proj01_raw <- read.table("proj01_raw.txt", 
-                              header = FALSE,
-                              col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
-                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"),
-                              skipNul = TRUE)
+
+## Option 2: load one at a time (example)
+#proj01_raw <- read.table("proj01_raw.txt", 
+#                              header = FALSE,
+#                              col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+#                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"),
+#                              skipNul = TRUE)
 
 
-# options for combining into a single df (but doesn't differentiate between models) - load plyr first
+# Option 3: Load all raw data into a single df (but doesn't differentiate between models) - load plyr first
 
 #raw_data_full = ldply(files, read.table, header = FALSE,
-                  col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
-                                 "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"))
+#                  col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+#                                 "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"))
 
 
 
@@ -59,69 +61,106 @@ proj01_raw <- read.table("proj01_raw.txt",
 
 
 # Filter data to years of interest and select daily max only
+## Could import and filter in a single step if we don't care about preserving the raw data in the environment (looks kind of messy...)
+
 ```{r}
 
-raw_dfs <- c(proj01_raw.txt, proj02_raw.txt, proj03_raw.txt, proj04_raw.txt, proj05_raw.txt, proj06_raw.txt, proj07_raw.txt, proj08_raw.txt, proj09_raw.txt, proj10_raw.txt, proj11_raw.txt, proj12_raw.txt, proj13_raw.txt, proj14_raw.txt, proj15_raw.txt, proj16_raw)
+
+# Create function to apply to all dfs
+## Inputs/parameters: x = df name, y = proj #
 
 
-for(i in raw_dfs) {
-  filter(YEAR > 1979) %>% 
-  filter(YEAR < 2011) %>% 
-  select(YEAR, MONTH, DAY, HTOT) %>%
-  group_by(YEAR, MONTH, DAY) %>% 
-  summarise(HTOTmax = max(HTOT)) %>% 
-  ungroup()
-}
-  
-  
-  
-proj01_max <- proj01_raw %>% 
+filter_max <- function(x, y) {
+  proj_max <- x %>% 
   filter(YEAR > 1979) %>% 
   filter(YEAR < 2011) %>% 
   select(YEAR, MONTH, DAY, HTOT) %>%
   group_by(YEAR, MONTH, DAY) %>% 
   summarize(HTOTmax = max(HTOT)) %>% 
-  ungroup()
+  ungroup() %>%
+  mutate(PROJ = y)
 
-proj02_max <- proj02_raw.txt %>% 
-  filter(YEAR > 1979) %>% 
-  filter(YEAR < 2011) %>% 
-  select(YEAR, MONTH, DAY, HTOT) %>%
-  group_by(YEAR, MONTH, DAY,) %>% 
-  summarise(HTOTmax = max(HTOT)) %>% 
-  ungroup()
+}
 
-proj03_max <- proj03_raw %>% 
-  filter(YEAR > 1979) %>% 
-  filter(YEAR < 2011) %>% 
-  select(YEAR, MONTH, DAY, HTOT) %>%
-  group_by(YEAR, MONTH, DAY) %>% 
-  summarise(HTOTmax = max(HTOT)) %>% 
-  ungroup()
+###########################################
 
-proj04_max <- proj04_raw %>% 
-  filter(YEAR > 1979) %>% 
-  filter(YEAR < 2011) %>% 
-  select(YEAR, MONTH, DAY, HTOT) %>%
-  group_by(YEAR, MONTH, DAY) %>% 
-  summarise(HTOTmax = max(HTOT)) %>% 
-  ungroup()
+## Working on creating a for loop to remove the repitition below, but until then, applying the filter function to each df separately 
+raw_dfs <- list(proj01_raw.txt, proj02_raw.txt, proj03_raw.txt, proj04_raw.txt, proj05_raw.txt, proj06_raw.txt, proj07_raw.txt, proj08_raw.txt, proj09_raw.txt, proj10_raw.txt, proj11_raw.txt, proj12_raw.txt, proj13_raw.txt, proj14_raw.txt, proj15_raw.txt, proj16_raw.txt)
+
+filtered_dfs <- {} # create empty list for the loop to store new dfs in
+
+proj_values <- c(01:16) # for use with a function with two inputs
+
+# Create 16 new filtered data frames using a loop
+# Iteration: Apply filter_max function to each raw data frame, create a new filtered data frame based on the name, add column of projection data 
+
+for (i in 1:length(raw_dfs)) {
+   assign(raw_dfs[i], filter_max(raw_dfs[[i]]))
+
+}
+
+# ^this is working, but only creating a list of all the filtered dfs, not creating them separately in the environment   
+###########################################
+  
+  
+proj01_max <- filter_max(proj01_raw.txt, 01)
+proj02_max <- filter_max(proj02_raw.txt, 02)
+proj03_max <- filter_max(proj03_raw.txt, 03)
+proj04_max <- filter_max(proj04_raw.txt, 04)
+proj05_max <- filter_max(proj05_raw.txt, 05)
+proj06_max <- filter_max(proj06_raw.txt, 06)
+proj07_max <- filter_max(proj07_raw.txt, 07)
+proj08_max <- filter_max(proj08_raw.txt, 08)
+proj09_max <- filter_max(proj09_raw.txt, 09)
+proj10_max <- filter_max(proj10_raw.txt, 10)
+proj11_max <- filter_max(proj11_raw.txt, 11)
+proj12_max <- filter_max(proj12_raw.txt, 12)
+proj13_max <- filter_max(proj13_raw.txt, 13)
+proj14_max <- filter_max(proj14_raw.txt, 14)
+proj15_max <- filter_max(proj15_raw.txt, 15)
+proj16_max <- filter_max(proj16_raw.txt, 16)
 
 
-
-proj_test <- proj02_raw %>%
+# Quick data check to make sure the code is pulling the correct max values
+proj_test <- proj06_raw.txt %>%
   filter(YEAR == 1980) %>%
   filter(MONTH == 1) %>% 
-  filter(DAY == 3)
+  filter(DAY == 6)
+
+
+# Combine all separate dfs into one (LONG)
+
+proj_max_combined <- rbind(proj01_max, proj02_max, 
+                           proj03_max, proj04_max, 
+                           proj05_max, proj06_max, 
+                           proj07_max, proj08_max, 
+                           proj09_max, proj10_max, 
+                           proj11_max, proj12_max, 
+                           proj13_max, proj14_max, 
+                           proj15_max, proj16_max)
+
+proj_max_combined$PROJ <- as.factor(proj_max_combined$PROJ) # coerce proj to a factor with 16 levels so it can be graphed as CDF; pipe this in above later
+
+
+ggplot(proj_max_combined, aes(HTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE)
+
 
 ```
+
+
+
+# Graph historical baseline distributions
 
 
 ```{r}
 
+hist(proj01_max$HTOTmax)
+hist(proj02_max$HTOTmax)
+hist(proj03_max$HTOTmax)
+
+# combine into one figure showing probability distribution for each projection?
+
 ```
-
-
 
 
 
