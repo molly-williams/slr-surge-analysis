@@ -653,36 +653,36 @@ plot_proj_year_annual <- ggplot(all_annual_models, aes(annual_max, colour = proj
   ylab("Non-exceedence probability") +
   xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("annual max figs/overall.png")
+  ggsave("annual max figs/overall_annual.png")
 
 
 plot_proj_year_annual
 
-plot_proj_year_GCMfacet <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+plot_proj_year_GCMfacet <- ggplot(all_annual_models, aes(annual_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
   facet_wrap(~GCM) +
   ggtitle("CDF by Projection Period for All Models - Annual Maximums") +
   ylab("Non-exceedence probability") +
   xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("annual max figs/overall_GCMfacet.png")
+  ggsave("annual max figs/overall_annual_GCMfacet.png")
 
 
-plot_by_RCP <- ggplot(all_models, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+plot_by_RCP <- ggplot(all_annual_models, aes(annual_max, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
   ggtitle("CDF by RCP Model - Annual Maximums") +
   ylab("Non-exceedence probability") +
   xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("annual max figs/overall_RCP.png")
+  ggsave("annual max figs/overall_annual_RCP.png")
 
 
 plot_by_RCP
 
-plot_by_GCM <- ggplot(all_models, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
+plot_by_GCM <- ggplot(all_annual_models, aes(annual_max, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
   ggtitle("CDF by GCM Model - Annual Maximums") +
   ylab("Non-exceedence probability") +
   xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("annual max figs/overall_GCM.png")
+  ggsave("annual max figs/overall_annual_GCM.png")
 
 ```
 
