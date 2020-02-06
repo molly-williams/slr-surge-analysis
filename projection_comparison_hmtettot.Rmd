@@ -1,0 +1,470 @@
+---
+title: "Surge Projection Comparison"
+author: "Molly Williams"
+date: "1/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+```{r}
+library(tidyverse)
+library(here)
+library(readr)
+
+```
+
+
+
+# Import raw data from various climate models
+
+```{r read_data}
+
+# Option 1: read in raw climate models into separate dfs using a loop (best)
+
+files <- list.files(file.path(here()), pattern = ".txt")
+#i = files[1]
+
+for (i in 1:length(files)) {
+  assign(files[i], read.table(files[i], 
+                              header = FALSE,
+                              col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+                                            "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND")))
+}
+
+
+# want to add a column that indicates which projection it came from
+
+
+
+# Option 2: Load all raw data into a single df (but doesn't differentiate between models) - load plyr first
+
+#raw_data_full = ldply(files, read.table, header = FALSE,
+#                  col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
+#                                 "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"))
+
+
+
+```
+
+
+# Filter historical data to years of interest and select daily max only
+## Could import and filter in a single step if we don't care about preserving the raw data in the environment (looks kind of messy...)
+
+```{r}
+
+
+# Create function to apply to all dfs
+
+max_hist <- function(x, y, z, m) { # Inputs/parameters: x = df name, y = proj #, z = RCP, m = model
+  proj_max <- x %>% 
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2011) %>% 
+  select(YEAR, MONTH, DAY, HMETTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarize(HMETTOTmax = max(HMETTOT)) %>% 
+  ungroup() %>%
+  mutate(PROJ = y) %>%  # add column for distinguishing projection
+  mutate(RCP = z) %>% # add column for RCP
+  mutate(GCM = m) # add column for GCM
+
+}
+
+
+###########################################
+
+## Working on creating a for loop to remove the repitition below, but until then, applying the filter function to each df separately 
+# areas of repition (e.g., where I need to go in and make c&p edits every time I change something): functions, individual data frame creation, combined data frame creation, plots; really not great for reproducibility! 
+
+raw_df_list <- list(proj01_raw.txt, proj02_raw.txt, proj03_raw.txt, proj04_raw.txt, proj05_raw.txt, proj06_raw.txt, proj07_raw.txt, proj08_raw.txt, proj09_raw.txt, proj10_raw.txt, proj11_raw.txt, proj12_raw.txt, proj13_raw.txt, proj14_raw.txt, proj15_raw.txt, proj16_raw.txt)
+
+raw_df_names <- grep("proj", ls(), value=TRUE) # create character string listing every df with the "proj"
+
+
+res <- lapply(raw_df_list, function(x) transform(x,V6=max_(x))) # create list of dfs that have the function applied to them (new column for mean)
+
+for(i in 1:length("CHARACTER STRING OF DFS")){
+assign("CHARACTER STRING OF DFS"[i], "LIST OF DFS THAT HAVE HAD THE FUNCTION APPLIED"[[i]],envir=.GlobalEnv)
+} 
+
+
+# Create 16 new filtered data frames using a loop
+# Iteration: Apply max function to each raw data frame, create a new filtered data frame based on the name, add column of projection data 
+
+for (i in 1:length(raw_df_list)) {
+   assign(raw_df_list[i], max_hist(raw_df_list[[i]]))
+
+}
+
+###########################################
+  
+  
+proj01_max_hist <- max_hist(proj01_raw.txt, 01, 4.5, "ACCESS")
+proj02_max_hist <- max_hist(proj02_raw.txt, 02, 4.5, "CanESM2")
+proj03_max_hist <- max_hist(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
+proj04_max_hist <- max_hist(proj04_raw.txt, 04, 4.5, "CNRM-CM5")
+proj05_max_hist <- max_hist(proj05_raw.txt, 05, 4.5, "GFDL-CM3")
+proj06_max_hist <- max_hist(proj06_raw.txt, 06, 4.5, "HadGEM2-CC")
+proj07_max_hist <- max_hist(proj07_raw.txt, 07, 4.5, "HadGEM2-ES")
+proj08_max_hist <- max_hist(proj08_raw.txt, 08, 4.5, "MIROC5")
+proj09_max_hist <- max_hist(proj09_raw.txt, 09, 8.5, "ACCESS")
+proj10_max_hist <- max_hist(proj10_raw.txt, 10, 8.5, "CanESM2")
+proj11_max_hist <- max_hist(proj11_raw.txt, 11, 8.5, "CMCC-CMS")
+proj12_max_hist <- max_hist(proj12_raw.txt, 12, 8.5, "CNRM-CM5")
+proj13_max_hist <- max_hist(proj13_raw.txt, 13, 8.5, "GFDL-CM3")
+proj14_max_hist <- max_hist(proj14_raw.txt, 14, 8.5, "HadGEM2-CC")
+proj15_max_hist <- max_hist(proj15_raw.txt, 15, 8.5, "HadGEM2-ES")
+proj16_max_hist <- max_hist(proj16_raw.txt, 16, 8.5, "MIROC5")
+
+
+# Quick data check to make sure the code is pulling the correct max values
+proj_test <- proj06_raw.txt %>%
+  filter(YEAR == 1980) %>%
+  filter(MONTH == 1) %>% 
+  filter(DAY == 6)
+
+
+# Combine all separate dfs into one (LONG); coerce all the categorical variables to factors so they can be graphed as separate lines in CDF
+
+max_hist_combined <- rbind(proj01_max_hist, proj02_max_hist, 
+                           proj03_max_hist, proj04_max_hist, 
+                           proj05_max_hist, proj06_max_hist, 
+                           proj07_max_hist, proj08_max_hist, 
+                           proj09_max_hist, proj10_max_hist, 
+                           proj11_max_hist, proj12_max_hist, 
+                           proj13_max_hist, proj14_max_hist, 
+                           proj15_max_hist, proj16_max_hist) %>% 
+  mutate(proj_year = as.factor(1995)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+
+
+plot_hist <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) +  # by individual projection
+  ggtitle("Historical Climate Projection Data for 16 models: 1985-2000") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_hist.png")
+
+plot_hist_RCP <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # by RCP (identical, as expected)
+  ggtitle("Historical Climate Projection Data for two RCP scenarios: 1985-2000") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_hist_RCP.png")
+
+plot_hist_GCM <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + #slightly different but largely the same, as expected
+  ggtitle("Historical Climate Projection Data for 8 models: 1985-2000") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_hist_GCM.png")
+
+```
+
+
+
+# Graph historical baseline distributions
+
+
+```{r}
+
+hist(proj01_max$HTOTmax)
+hist(proj02_max$HTOTmax)
+hist(proj03_max$HTOTmax)
+
+# combine into one figure showing probability distribution for each projection?
+
+```
+
+
+# Repeat for future projections
+
+## 30-year projection centered on 2030
+
+```{r}
+
+max_2030 <- function(x, y, z, m) { 
+  proj_max <- x %>% 
+  filter(YEAR > 2014) %>% 
+  filter(YEAR < 2046) %>% 
+  select(YEAR, MONTH, DAY, HMETTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarize(HMETTOTmax = max(HMETTOT)) %>% 
+  ungroup() %>%
+  mutate(PROJ = y) %>%  # add column for distinguishing projection
+  mutate(RCP = z) %>% # add column for RCP
+  mutate(GCM = m) # add column for GCM
+
+}
+
+# again, replace this with a loop when i figure it out... 
+# don't actually need these in separate dfs. Want to write a loop that will combine all of the filtered data into a single df, complete with the projection #s and projection year (end product of this code chunk)
+  
+
+proj01_max_2030 <- max_2030(proj01_raw.txt, 01, 4.5, "ACCESS")
+proj02_max_2030 <- max_2030(proj02_raw.txt, 02, 4.5, "CanESM2")
+proj03_max_2030 <- max_2030(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
+proj04_max_2030 <- max_2030(proj04_raw.txt, 04, 4.5, "CNRM-CM5")
+proj05_max_2030 <- max_2030(proj05_raw.txt, 05, 4.5, "GFDL-CM3")
+proj06_max_2030 <- max_2030(proj06_raw.txt, 06, 4.5, "HadGEM2-CC")
+proj07_max_2030 <- max_2030(proj07_raw.txt, 07, 4.5, "HadGEM2-ES")
+proj08_max_2030 <- max_2030(proj08_raw.txt, 08, 4.5, "MIROC5")
+proj09_max_2030 <- max_2030(proj09_raw.txt, 09, 8.5, "ACCESS")
+proj10_max_2030 <- max_2030(proj10_raw.txt, 10, 8.5, "CanESM2")
+proj11_max_2030 <- max_2030(proj11_raw.txt, 11, 8.5, "CMCC-CMS")
+proj12_max_2030 <- max_2030(proj12_raw.txt, 12, 8.5, "CNRM-CM5")
+proj13_max_2030 <- max_2030(proj13_raw.txt, 13, 8.5, "GFDL-CM3")
+proj14_max_2030 <- max_2030(proj14_raw.txt, 14, 8.5, "HadGEM2-CC")
+proj15_max_2030 <- max_2030(proj15_raw.txt, 15, 8.5, "HadGEM2-ES")
+proj16_max_2030 <- max_2030(proj16_raw.txt, 16, 8.5, "MIROC5")
+
+
+# Combine all models into one data frame
+max_2030_combined <- rbind(proj01_max_2030, proj02_max_2030, 
+                           proj03_max_2030, proj04_max_2030, 
+                           proj05_max_2030, proj06_max_2030, 
+                           proj07_max_2030, proj08_max_2030, 
+                           proj09_max_2030, proj10_max_2030, 
+                           proj11_max_2030, proj12_max_2030, 
+                           proj13_max_2030, proj14_max_2030, 
+                           proj15_max_2030, proj16_max_2030) %>% 
+  mutate(proj_year = as.factor(2030)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+  
+
+
+
+
+plot_2030 <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) + # little bit more of a spread across projection models centered around 2030 vs 1995
+  ggtitle("Global Climate Projection Data for 16 models: 2015-2045") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2030.png")
+
+plot_2030_RCP <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # slightly different
+  ggtitle("Global Climate Projection Data for two RCP scenarios: 2015-2045") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2030_RCP.png")
+
+plot_2030_GCM <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + # similar to historical
+  ggtitle("Global Climate Projection Data for 8 models: 2015-2045") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2030_GCM.png")
+
+```
+
+
+
+## 30-year projection centered on 2050
+
+```{r}
+
+max_2050 <- function(x, y, z, m) { 
+  proj_max <- x %>% 
+  filter(YEAR > 2034) %>% 
+  filter(YEAR < 2066) %>% 
+  select(YEAR, MONTH, DAY, HMETTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarize(HMETTOTmax = max(HMETTOT)) %>% 
+  ungroup() %>%
+  mutate(PROJ = y) %>%  # add column for distinguishing projection #
+  mutate(RCP = z) %>% # add column for RCP
+  mutate(GCM = m) # add column for GCM
+}
+
+# again, replace this with a loop when i figure it out... 
+# don't actually need these in separate dfs. Want to write a loop that will combine all of the filtered data into a single df, complete with the projection #s and projection year (end product of this code chunk)
+
+proj01_max_2050 <- max_2050(proj01_raw.txt, 01, 4.5, "ACCESS")
+proj02_max_2050 <- max_2050(proj02_raw.txt, 02, 4.5, "CanESM2")
+proj03_max_2050 <- max_2050(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
+proj04_max_2050 <- max_2050(proj04_raw.txt, 04, 4.5, "CNRM-CM5")
+proj05_max_2050 <- max_2050(proj05_raw.txt, 05, 4.5, "GFDL-CM3")
+proj06_max_2050 <- max_2050(proj06_raw.txt, 06, 4.5, "HadGEM2-CC")
+proj07_max_2050 <- max_2050(proj07_raw.txt, 07, 4.5, "HadGEM2-ES")
+proj08_max_2050 <- max_2050(proj08_raw.txt, 08, 4.5, "MIROC5")
+proj09_max_2050 <- max_2050(proj09_raw.txt, 09, 8.5, "ACCESS")
+proj10_max_2050 <- max_2050(proj10_raw.txt, 10, 8.5, "CanESM2")
+proj11_max_2050 <- max_2050(proj11_raw.txt, 11, 8.5, "CMCC-CMS")
+proj12_max_2050 <- max_2050(proj12_raw.txt, 12, 8.5, "CNRM-CM5")
+proj13_max_2050 <- max_2050(proj13_raw.txt, 13, 8.5, "GFDL-CM3")
+proj14_max_2050 <- max_2050(proj14_raw.txt, 14, 8.5, "HadGEM2-CC")
+proj15_max_2050 <- max_2050(proj15_raw.txt, 15, 8.5, "HadGEM2-ES")
+proj16_max_2050 <- max_2050(proj16_raw.txt, 16, 8.5, "MIROC5")
+
+max_2050_combined <- rbind(proj01_max_2050, proj02_max_2050, 
+                           proj03_max_2050, proj04_max_2050, 
+                           proj05_max_2050, proj06_max_2050, 
+                           proj07_max_2050, proj08_max_2050, 
+                           proj09_max_2050, proj10_max_2050, 
+                           proj11_max_2050, proj12_max_2050, 
+                           proj13_max_2050, proj14_max_2050, 
+                           proj15_max_2050, proj16_max_2050) %>% 
+  mutate(proj_year = as.factor(2050)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+plot_2050 <- ggplot(max_2050_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) + # spread continues to increase 
+  ggtitle("Global Climate Projection Data for 16 models: 2035-2065") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2050.png")
+
+plot_2050_RCP <- ggplot(max_2050_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # divergence
+  ggtitle("Global Climate Projection Data for two RCP scenarios: 2035-2065") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2050_RCP.png")
+
+plot_2050_GCM <- ggplot(max_2050_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + # slight divergence
+  ggtitle("Global Climate Projection Data for 8 models: 2035-2065") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2050_GCM.png")
+
+```
+
+
+
+## 30-year projection centered on 2085
+
+```{r}
+
+max_2085 <- function(x, y, z, m) { 
+  proj_max <- x %>% 
+  filter(YEAR > 2069) %>% 
+  filter(YEAR < 2100) %>% 
+  select(YEAR, MONTH, DAY, HMETTOT) %>%
+  group_by(YEAR, MONTH, DAY) %>% 
+  summarize(HMETTOTmax = max(HMETTOT)) %>% 
+  ungroup() %>%
+  mutate(PROJ = y) %>%  # add column for distinguishing projection #
+  mutate(RCP = z) %>% # add column for RCP
+  mutate(GCM = m) # add column for GCM
+}
+
+
+
+  
+proj01_max_2085 <- max_2085(proj01_raw.txt, 01, 4.5, "ACCESS")
+proj02_max_2085 <- max_2085(proj02_raw.txt, 02, 4.5, "CanESM2")
+proj03_max_2085 <- max_2085(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
+proj04_max_2085 <- max_2085(proj04_raw.txt, 04, 4.5, "CNRM-CM5")
+proj05_max_2085 <- max_2085(proj05_raw.txt, 05, 4.5, "GFDL-CM3")
+proj06_max_2085 <- max_2085(proj06_raw.txt, 06, 4.5, "HadGEM2-CC")
+proj07_max_2085 <- max_2085(proj07_raw.txt, 07, 4.5, "HadGEM2-ES")
+proj08_max_2085 <- max_2085(proj08_raw.txt, 08, 4.5, "MIROC5")
+proj09_max_2085 <- max_2085(proj09_raw.txt, 09, 8.5, "ACCESS")
+proj10_max_2085 <- max_2085(proj10_raw.txt, 10, 8.5, "CanESM2")
+proj11_max_2085 <- max_2085(proj11_raw.txt, 11, 8.5, "CMCC-CMS")
+proj12_max_2085 <- max_2085(proj12_raw.txt, 12, 8.5, "CNRM-CM5")
+proj13_max_2085 <- max_2085(proj13_raw.txt, 13, 8.5, "GFDL-CM3")
+proj14_max_2085 <- max_2085(proj14_raw.txt, 14, 8.5, "HadGEM2-CC")
+proj15_max_2085 <- max_2085(proj15_raw.txt, 15, 8.5, "HadGEM2-ES")
+proj16_max_2085 <- max_2085(proj16_raw.txt, 16, 8.5, "MIROC5")
+
+
+max_2085_combined <- rbind(proj01_max_2085, proj02_max_2085, 
+                           proj03_max_2085, proj04_max_2085, 
+                           proj05_max_2085, proj06_max_2085, 
+                           proj07_max_2085, proj08_max_2085, 
+                           proj09_max_2085, proj10_max_2085, 
+                           proj11_max_2085, proj12_max_2085, 
+                           proj13_max_2085, proj14_max_2085, 
+                           proj15_max_2085, proj16_max_2085) %>% 
+  mutate(proj_year = as.factor(2085)) %>%
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+
+plot_2085 <- ggplot(max_2085_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) + # big gap here between projections for RCP 4.5 vs RCP 8.5
+  ggtitle("Global Climate Projection Data for 16 models: 2070-2099") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2085.png")
+
+plot_2085_RCP <- ggplot(max_2085_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # large divergence
+  ggtitle("Global Climate Projection Data for two RCP scenarios: 2070-2099") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2085_RCP.png")
+
+plot_2085_GCM <- ggplot(max_2085_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + # slight divergence
+  ggtitle("Global Climate Projection Data for 8 models: 2070-2099") +
+  xlab("Non-Exceedence") +
+  ggsave("plot_2085_GCM.png")
+```
+
+
+# Visualize historical and future projections together
+
+```{r}
+
+# combine the daily maxima for all projections and add columns to distinguish between models
+
+all_models <- rbind(max_hist_combined, max_2030_combined, max_2050_combined, max_2085_combined)
+  
+
+plot_proj_year <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by Projection Period for All Models") +
+  xlab("Non-exceedence") +
+  theme_bw() +
+  ggsave("plot_overall.png")
+
+
+plot_proj_year
+
+plot_by_RCP <- ggplot(all_models, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by RCP Model") +
+  xlab("Non-exceedence") +
+  theme_bw() +
+  ggsave("plot_overall_RCP.png")
+
+
+plot_by_RCP
+
+plot_by_GCM <- ggplot(all_models, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by GCM Model") +
+  xlab("Non-exceedence") +
+  theme_bw() +
+  ggsave("plot_overall_GCM.png")
+
+
+plot_by_GCM
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
