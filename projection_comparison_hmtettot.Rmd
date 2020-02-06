@@ -122,7 +122,7 @@ proj16_max_hist <- max_hist(proj16_raw.txt, 16, 8.5, "MIROC5")
 
 
 # Quick data check to make sure the code is pulling the correct max values
-proj_test <- proj06_raw.txt %>%
+proj_test <- proj01_raw.txt %>%
   filter(YEAR == 1980) %>%
   filter(MONTH == 1) %>% 
   filter(DAY == 6)
