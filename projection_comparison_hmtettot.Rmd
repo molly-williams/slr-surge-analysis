@@ -121,11 +121,12 @@ proj15_max_hist <- max_hist(proj15_raw.txt, 15, 8.5, "HadGEM2-ES")
 proj16_max_hist <- max_hist(proj16_raw.txt, 16, 8.5, "MIROC5")
 
 
+
 # Quick data check to make sure the code is pulling the correct max values
-proj_test <- proj01_raw.txt %>%
-  filter(YEAR == 1980) %>%
-  filter(MONTH == 1) %>% 
-  filter(DAY == 6)
+proj_test <- proj01_max_hist %>%
+  filter(YEAR == 1980) #%>%
+#  filter(MONTH == 1) %>% 
+#  filter(DAY == 6)
 
 
 # Combine all separate dfs into one (LONG); coerce all the categorical variables to factors so they can be graphed as separate lines in CDF
@@ -149,18 +150,21 @@ max_hist_combined <- rbind(proj01_max_hist, proj02_max_hist,
 
 plot_hist <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) +  # by individual projection
   ggtitle("Historical Climate Projection Data for 16 models: 1985-2000") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_hist.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/historical.png", dpi = 72) # still super big on github? 
 
 plot_hist_RCP <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # by RCP (identical, as expected)
   ggtitle("Historical Climate Projection Data for two RCP scenarios: 1985-2000") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_hist_RCP.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs//historical_RCP.png")
 
 plot_hist_GCM <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + #slightly different but largely the same, as expected
   ggtitle("Historical Climate Projection Data for 8 models: 1985-2000") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_hist_GCM.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/historical_GCM.png")
 
 ```
 
@@ -242,18 +246,21 @@ max_2030_combined <- rbind(proj01_max_2030, proj02_max_2030,
 
 plot_2030 <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) + # little bit more of a spread across projection models centered around 2030 vs 1995
   ggtitle("Global Climate Projection Data for 16 models: 2015-2045") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2030.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2030.png")
 
 plot_2030_RCP <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # slightly different
   ggtitle("Global Climate Projection Data for two RCP scenarios: 2015-2045") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2030_RCP.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2030_RCP.png")
 
 plot_2030_GCM <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + # similar to historical
   ggtitle("Global Climate Projection Data for 8 models: 2015-2045") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2030_GCM.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2030_GCM.png")
 
 ```
 
@@ -313,18 +320,21 @@ max_2050_combined <- rbind(proj01_max_2050, proj02_max_2050,
 
 plot_2050 <- ggplot(max_2050_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) + # spread continues to increase 
   ggtitle("Global Climate Projection Data for 16 models: 2035-2065") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2050.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2050.png")
 
 plot_2050_RCP <- ggplot(max_2050_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # divergence
   ggtitle("Global Climate Projection Data for two RCP scenarios: 2035-2065") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2050_RCP.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2050_RCP.png")
 
 plot_2050_GCM <- ggplot(max_2050_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + # slight divergence
   ggtitle("Global Climate Projection Data for 8 models: 2035-2065") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2050_GCM.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2050_GCM.png")
 
 ```
 
@@ -386,18 +396,22 @@ max_2085_combined <- rbind(proj01_max_2085, proj02_max_2085,
 
 plot_2085 <- ggplot(max_2085_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) + # big gap here between projections for RCP 4.5 vs RCP 8.5
   ggtitle("Global Climate Projection Data for 16 models: 2070-2099") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2085.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2085.png")
 
 plot_2085_RCP <- ggplot(max_2085_combined, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) + # large divergence
   ggtitle("Global Climate Projection Data for two RCP scenarios: 2070-2099") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2085_RCP.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2085_RCP.png")
 
 plot_2085_GCM <- ggplot(max_2085_combined, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) + # slight divergence
   ggtitle("Global Climate Projection Data for 8 models: 2070-2099") +
-  xlab("Non-Exceedence") +
-  ggsave("plot_2085_GCM.png")
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  ggsave("daily max figs/2085_GCM.png")
+
 ```
 
 
@@ -411,28 +425,40 @@ all_models <- rbind(max_hist_combined, max_2030_combined, max_2050_combined, max
   
 
 plot_proj_year <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
-  ggtitle("CDF by Projection Period for All Models") +
-  xlab("Non-exceedence") +
+  ggtitle("CDF by Projection Period for All Models - Daily Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("plot_overall.png")
+  ggsave("daily max figs/overall.png")
 
 
 plot_proj_year
 
-plot_by_RCP <- ggplot(all_models, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
-  ggtitle("CDF by RCP Model") +
-  xlab("Non-exceedence") +
+plot_proj_year_GCMfacet <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  facet_wrap(~GCM) +
+  ggtitle("CDF by Projection Period for All Models - Daily Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("plot_overall_RCP.png")
+  ggsave("daily max figs/overall_GCMfacet.png")
+
+
+plot_by_RCP <- ggplot(all_models, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by RCP Model - Daily Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("daily max figs/overall_RCP.png")
 
 
 plot_by_RCP
 
 plot_by_GCM <- ggplot(all_models, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
-  ggtitle("CDF by GCM Model") +
-  xlab("Non-exceedence") +
+  ggtitle("CDF by GCM Model - Daily Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
   theme_bw() +
-  ggsave("plot_overall_GCM.png")
+  ggsave("daily max figs/overall_GCM.png")
 
 
 plot_by_GCM
@@ -440,11 +466,225 @@ plot_by_GCM
 ```
 
 
+# Annual maximums 
+
+## Historical
+```{r}
+
+
+max_annual <- function(x) {
+  annual_max <- x %>%
+    group_by(YEAR, PROJ, RCP, GCM) %>% 
+    summarize(annual_max = max(HMETTOTmax)) %>% 
+    ungroup()
+    
+}
+
+
+proj01_max_hist_annual <- max_annual(proj01_max_hist)
+proj02_max_hist_annual <- max_annual(proj02_max_hist)
+proj03_max_hist_annual <- max_annual(proj03_max_hist)
+proj04_max_hist_annual <- max_annual(proj04_max_hist)
+proj05_max_hist_annual <- max_annual(proj05_max_hist)
+proj06_max_hist_annual <- max_annual(proj06_max_hist)
+proj07_max_hist_annual <- max_annual(proj07_max_hist)
+proj08_max_hist_annual <- max_annual(proj08_max_hist)
+proj09_max_hist_annual <- max_annual(proj09_max_hist)
+proj10_max_hist_annual <- max_annual(proj10_max_hist)
+proj11_max_hist_annual <- max_annual(proj11_max_hist)
+proj12_max_hist_annual <- max_annual(proj12_max_hist)
+proj13_max_hist_annual <- max_annual(proj13_max_hist)
+proj14_max_hist_annual <- max_annual(proj14_max_hist)
+proj15_max_hist_annual <- max_annual(proj15_max_hist)
+proj16_max_hist_annual <- max_annual(proj16_max_hist)
+
+
+max_hist_combined_annual <- rbind(proj01_max_hist_annual, proj02_max_hist_annual, 
+                           proj03_max_hist_annual, proj04_max_hist_annual, 
+                           proj05_max_hist_annual, proj06_max_hist_annual, 
+                           proj07_max_hist_annual, proj08_max_hist_annual, 
+                           proj09_max_hist_annual, proj10_max_hist_annual, 
+                           proj11_max_hist_annual, proj12_max_hist_annual, 
+                           proj13_max_hist_annual, proj14_max_hist_annual, 
+                           proj15_max_hist_annual, proj16_max_hist_annual) %>% 
+  mutate(proj_year = as.factor(1995)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
 
 
 
+```
 
 
+
+## 2030
+
+
+```{r}
+
+proj01_max_2030_annual <- max_annual(proj01_max_2030)
+proj02_max_2030_annual <- max_annual(proj02_max_2030)
+proj03_max_2030_annual <- max_annual(proj03_max_2030)
+proj04_max_2030_annual <- max_annual(proj04_max_2030)
+proj05_max_2030_annual <- max_annual(proj05_max_2030)
+proj06_max_2030_annual <- max_annual(proj06_max_2030)
+proj07_max_2030_annual <- max_annual(proj07_max_2030)
+proj08_max_2030_annual <- max_annual(proj08_max_2030)
+proj09_max_2030_annual <- max_annual(proj09_max_2030)
+proj10_max_2030_annual <- max_annual(proj10_max_2030)
+proj11_max_2030_annual <- max_annual(proj11_max_2030)
+proj12_max_2030_annual <- max_annual(proj12_max_2030)
+proj13_max_2030_annual <- max_annual(proj13_max_2030)
+proj14_max_2030_annual <- max_annual(proj14_max_2030)
+proj15_max_2030_annual <- max_annual(proj15_max_2030)
+proj16_max_2030_annual <- max_annual(proj16_max_2030)
+
+
+max_2030_combined_annual <- rbind(proj01_max_2030_annual, proj02_max_2030_annual, 
+                           proj03_max_2030_annual, proj04_max_2030_annual, 
+                           proj05_max_2030_annual, proj06_max_2030_annual, 
+                           proj07_max_2030_annual, proj08_max_2030_annual, 
+                           proj09_max_2030_annual, proj10_max_2030_annual, 
+                           proj11_max_2030_annual, proj12_max_2030_annual, 
+                           proj13_max_2030_annual, proj14_max_2030_annual, 
+                           proj15_max_2030_annual, proj16_max_2030_annual) %>% 
+  mutate(proj_year = as.factor(2030)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+  
+```
+
+
+
+## 2050
+
+
+```{r}
+
+proj01_max_2050_annual <- max_annual(proj01_max_2050)
+proj02_max_2050_annual <- max_annual(proj02_max_2050)
+proj03_max_2050_annual <- max_annual(proj03_max_2050)
+proj04_max_2050_annual <- max_annual(proj04_max_2050)
+proj05_max_2050_annual <- max_annual(proj05_max_2050)
+proj06_max_2050_annual <- max_annual(proj06_max_2050)
+proj07_max_2050_annual <- max_annual(proj07_max_2050)
+proj08_max_2050_annual <- max_annual(proj08_max_2050)
+proj09_max_2050_annual <- max_annual(proj09_max_2050)
+proj10_max_2050_annual <- max_annual(proj10_max_2050)
+proj11_max_2050_annual <- max_annual(proj11_max_2050)
+proj12_max_2050_annual <- max_annual(proj12_max_2050)
+proj13_max_2050_annual <- max_annual(proj13_max_2050)
+proj14_max_2050_annual <- max_annual(proj14_max_2050)
+proj15_max_2050_annual <- max_annual(proj15_max_2050)
+proj16_max_2050_annual <- max_annual(proj16_max_2050)
+
+
+max_2050_combined_annual <- rbind(proj01_max_2050_annual, proj02_max_2050_annual, 
+                           proj03_max_2050_annual, proj04_max_2050_annual, 
+                           proj05_max_2050_annual, proj06_max_2050_annual, 
+                           proj07_max_2050_annual, proj08_max_2050_annual, 
+                           proj09_max_2050_annual, proj10_max_2050_annual, 
+                           proj11_max_2050_annual, proj12_max_2050_annual, 
+                           proj13_max_2050_annual, proj14_max_2050_annual, 
+                           proj15_max_2050_annual, proj16_max_2050_annual) %>% 
+  mutate(proj_year = as.factor(2050)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+```
+
+
+## 2085
+
+
+```{r}
+
+proj01_max_2085_annual <- max_annual(proj01_max_2085)
+proj02_max_2085_annual <- max_annual(proj02_max_2085)
+proj03_max_2085_annual <- max_annual(proj03_max_2085)
+proj04_max_2085_annual <- max_annual(proj04_max_2085)
+proj05_max_2085_annual <- max_annual(proj05_max_2085)
+proj06_max_2085_annual <- max_annual(proj06_max_2085)
+proj07_max_2085_annual <- max_annual(proj07_max_2085)
+proj08_max_2085_annual <- max_annual(proj08_max_2085)
+proj09_max_2085_annual <- max_annual(proj09_max_2085)
+proj10_max_2085_annual <- max_annual(proj10_max_2085)
+proj11_max_2085_annual <- max_annual(proj11_max_2085)
+proj12_max_2085_annual <- max_annual(proj12_max_2085)
+proj13_max_2085_annual <- max_annual(proj13_max_2085)
+proj14_max_2085_annual <- max_annual(proj14_max_2085)
+proj15_max_2085_annual <- max_annual(proj15_max_2085)
+proj16_max_2085_annual <- max_annual(proj16_max_2085)
+
+
+max_2085_combined_annual <- rbind(proj01_max_2085_annual, proj02_max_2085_annual, 
+                           proj03_max_2085_annual, proj04_max_2085_annual, 
+                           proj05_max_2085_annual, proj06_max_2085_annual, 
+                           proj07_max_2085_annual, proj08_max_2085_annual, 
+                           proj09_max_2085_annual, proj10_max_2085_annual, 
+                           proj11_max_2085_annual, proj12_max_2085_annual, 
+                           proj13_max_2085_annual, proj14_max_2085_annual, 
+                           proj15_max_2085_annual, proj16_max_2085_annual) %>% 
+  mutate(proj_year = as.factor(2085)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+```
+
+
+## Figures
+
+```{r}
+
+all_annual_models <- rbind(max_hist_combined_annual, max_2030_combined_annual, max_2050_combined_annual, max_2085_combined_annual)
+
+plot_proj_year_annual <- ggplot(all_annual_models, aes(annual_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by Projection Period for All Models - Annual Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("annual max figs/overall.png")
+
+
+plot_proj_year_annual
+
+plot_proj_year_GCMfacet <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  facet_wrap(~GCM) +
+  ggtitle("CDF by Projection Period for All Models - Annual Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("annual max figs/overall_GCMfacet.png")
+
+
+plot_by_RCP <- ggplot(all_models, aes(HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by RCP Model - Annual Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("annual max figs/overall_RCP.png")
+
+
+plot_by_RCP
+
+plot_by_GCM <- ggplot(all_models, aes(HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by GCM Model - Annual Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("annual max figs/overall_GCM.png")
+
+```
 
 
 
