@@ -63,7 +63,7 @@ for (i in 1:length(files)) {
 max_hist <- function(x, y, z, m) { # Inputs/parameters: x = df name, y = proj #, z = RCP, m = model
   proj_max <- x %>% 
   filter(YEAR > 1979) %>% 
-  filter(YEAR < 2011) %>% 
+  filter(YEAR < 2010) %>% 
   select(YEAR, MONTH, DAY, HMETTOT) %>%
   group_by(YEAR, MONTH, DAY) %>% 
   summarize(HMETTOTmax = max(HMETTOT)) %>% 
@@ -75,33 +75,7 @@ max_hist <- function(x, y, z, m) { # Inputs/parameters: x = df name, y = proj #,
 }
 
 
-###########################################
 
-## Working on creating a for loop to remove the repitition below, but until then, applying the filter function to each df separately 
-# areas of repition (e.g., where I need to go in and make c&p edits every time I change something): functions, individual data frame creation, combined data frame creation, plots; really not great for reproducibility! 
-
-raw_df_list <- list(proj01_raw.txt, proj02_raw.txt, proj03_raw.txt, proj04_raw.txt, proj05_raw.txt, proj06_raw.txt, proj07_raw.txt, proj08_raw.txt, proj09_raw.txt, proj10_raw.txt, proj11_raw.txt, proj12_raw.txt, proj13_raw.txt, proj14_raw.txt, proj15_raw.txt, proj16_raw.txt)
-
-raw_df_names <- grep("proj", ls(), value=TRUE) # create character string listing every df with the "proj"
-
-
-res <- lapply(raw_df_list, function(x) transform(x,V6=max_(x))) # create list of dfs that have the function applied to them (new column for mean)
-
-for(i in 1:length("CHARACTER STRING OF DFS")){
-assign("CHARACTER STRING OF DFS"[i], "LIST OF DFS THAT HAVE HAD THE FUNCTION APPLIED"[[i]],envir=.GlobalEnv)
-} 
-
-
-# Create 16 new filtered data frames using a loop
-# Iteration: Apply max function to each raw data frame, create a new filtered data frame based on the name, add column of projection data 
-
-for (i in 1:length(raw_df_list)) {
-   assign(raw_df_list[i], max_hist(raw_df_list[[i]]))
-
-}
-
-###########################################
-  
   
 proj01_max_hist <- max_hist(proj01_raw.txt, 01, 4.5, "ACCESS")
 proj02_max_hist <- max_hist(proj02_raw.txt, 02, 4.5, "CanESM2")
@@ -147,7 +121,6 @@ max_hist_combined <- rbind(proj01_max_hist, proj02_max_hist,
 
 
 
-
 plot_hist <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = PROJ)) + stat_ecdf(geom="step", pad = FALSE) +  # by individual projection
   ggtitle("Historical Climate Projection Data for 16 models: 1985-2000") +
   ylab("Non-exceedence probability") +
@@ -165,6 +138,7 @@ plot_hist_GCM <- ggplot(max_hist_combined, aes(HMETTOTmax, colour = GCM)) + stat
   ylab("Non-exceedence probability") +
   xlab("Meters above mean sea level ") +
   ggsave("daily max figs/historical_GCM.png")
+
 
 ```
 
@@ -193,7 +167,7 @@ hist(proj03_max$HTOTmax)
 max_2030 <- function(x, y, z, m) { 
   proj_max <- x %>% 
   filter(YEAR > 2014) %>% 
-  filter(YEAR < 2046) %>% 
+  filter(YEAR < 2045) %>% 
   select(YEAR, MONTH, DAY, HMETTOT) %>%
   group_by(YEAR, MONTH, DAY) %>% 
   summarize(HMETTOTmax = max(HMETTOT)) %>% 
@@ -273,7 +247,7 @@ plot_2030_GCM <- ggplot(max_2030_combined, aes(HMETTOTmax, colour = GCM)) + stat
 max_2050 <- function(x, y, z, m) { 
   proj_max <- x %>% 
   filter(YEAR > 2034) %>% 
-  filter(YEAR < 2066) %>% 
+  filter(YEAR < 2065) %>% 
   select(YEAR, MONTH, DAY, HMETTOT) %>%
   group_by(YEAR, MONTH, DAY) %>% 
   summarize(HMETTOTmax = max(HMETTOT)) %>% 
@@ -286,6 +260,7 @@ max_2050 <- function(x, y, z, m) {
 # again, replace this with a loop when i figure it out... 
 # don't actually need these in separate dfs. Want to write a loop that will combine all of the filtered data into a single df, complete with the projection #s and projection year (end product of this code chunk)
 
+    
 proj01_max_2050 <- max_2050(proj01_raw.txt, 01, 4.5, "ACCESS")
 proj02_max_2050 <- max_2050(proj02_raw.txt, 02, 4.5, "CanESM2")
 proj03_max_2050 <- max_2050(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
@@ -433,6 +408,9 @@ plot_proj_year <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat
 
 
 plot_proj_year
+
+qqnorm(all_models$HMETTOTmax, main="(b) Normal Q-Q Plot")
+
 
 plot_proj_year_GCMfacet <- ggplot(all_models, aes(HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
   facet_wrap(~GCM) +
@@ -688,10 +666,534 @@ plot_by_GCM <- ggplot(all_annual_models, aes(annual_max, colour = GCM)) + stat_e
 
 
 
+# Monthly maximums
+
+## Historical
+```{r}
+
+
+max_monthly <- function(x) {
+  annual_max <- x %>%
+    group_by(YEAR, MONTH, PROJ, RCP, GCM) %>% 
+    summarize(monthly_max = max(HMETTOTmax)) %>% 
+    ungroup()
+    
+}
+
+
+proj01_max_hist_monthly <- max_monthly(proj01_max_hist)
+proj02_max_hist_monthly <- max_monthly(proj02_max_hist)
+proj03_max_hist_monthly <- max_monthly(proj03_max_hist)
+proj04_max_hist_monthly <- max_monthly(proj04_max_hist)
+proj05_max_hist_monthly <- max_monthly(proj05_max_hist)
+proj06_max_hist_monthly <- max_monthly(proj06_max_hist)
+proj07_max_hist_monthly <- max_monthly(proj07_max_hist)
+proj08_max_hist_monthly <- max_monthly(proj08_max_hist)
+proj09_max_hist_monthly <- max_monthly(proj09_max_hist)
+proj10_max_hist_monthly <- max_monthly(proj10_max_hist)
+proj11_max_hist_monthly <- max_monthly(proj11_max_hist)
+proj12_max_hist_monthly <- max_monthly(proj12_max_hist)
+proj13_max_hist_monthly <- max_monthly(proj13_max_hist)
+proj14_max_hist_monthly <- max_monthly(proj14_max_hist)
+proj15_max_hist_monthly <- max_monthly(proj15_max_hist)
+proj16_max_hist_monthly <- max_monthly(proj16_max_hist)
+
+
+max_hist_combined_monthly <- rbind(proj01_max_hist_monthly, proj02_max_hist_monthly, 
+                           proj03_max_hist_monthly, proj04_max_hist_monthly, 
+                           proj05_max_hist_monthly, proj06_max_hist_monthly, 
+                           proj07_max_hist_monthly, proj08_max_hist_monthly, 
+                           proj09_max_hist_monthly, proj10_max_hist_monthly, 
+                           proj11_max_hist_monthly, proj12_max_hist_monthly, 
+                           proj13_max_hist_monthly, proj14_max_hist_monthly, 
+                           proj15_max_hist_monthly, proj16_max_hist_monthly) %>% 
+  mutate(proj_year = as.factor(1995)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+#proj_test <- proj01_max_hist %>%
+#  filter(YEAR == 1995) %>%
+#  filter(MONTH == 4) #%>% 
+
+```
+
+
+
+## 2030
+
+
+```{r}
+
+proj01_max_2030_monthly <- max_monthly(proj01_max_2030)
+proj02_max_2030_monthly <- max_monthly(proj02_max_2030)
+proj03_max_2030_monthly <- max_monthly(proj03_max_2030)
+proj04_max_2030_monthly <- max_monthly(proj04_max_2030)
+proj05_max_2030_monthly <- max_monthly(proj05_max_2030)
+proj06_max_2030_monthly <- max_monthly(proj06_max_2030)
+proj07_max_2030_monthly <- max_monthly(proj07_max_2030)
+proj08_max_2030_monthly <- max_monthly(proj08_max_2030)
+proj09_max_2030_monthly <- max_monthly(proj09_max_2030)
+proj10_max_2030_monthly <- max_monthly(proj10_max_2030)
+proj11_max_2030_monthly <- max_monthly(proj11_max_2030)
+proj12_max_2030_monthly <- max_monthly(proj12_max_2030)
+proj13_max_2030_monthly <- max_monthly(proj13_max_2030)
+proj14_max_2030_monthly <- max_monthly(proj14_max_2030)
+proj15_max_2030_monthly <- max_monthly(proj15_max_2030)
+proj16_max_2030_monthly <- max_monthly(proj16_max_2030)
+
+
+max_2030_combined_monthly <- rbind(proj01_max_2030_monthly, proj02_max_2030_monthly, 
+                           proj03_max_2030_monthly, proj04_max_2030_monthly, 
+                           proj05_max_2030_monthly, proj06_max_2030_monthly, 
+                           proj07_max_2030_monthly, proj08_max_2030_monthly, 
+                           proj09_max_2030_monthly, proj10_max_2030_monthly, 
+                           proj11_max_2030_monthly, proj12_max_2030_monthly, 
+                           proj13_max_2030_monthly, proj14_max_2030_monthly, 
+                           proj15_max_2030_monthly, proj16_max_2030_monthly) %>% 
+  mutate(proj_year = as.factor(2030)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+  
+```
+
+
+
+## 2050
+
+
+```{r}
+
+proj01_max_2050_monthly <- max_monthly(proj01_max_2050)
+proj02_max_2050_monthly <- max_monthly(proj02_max_2050)
+proj03_max_2050_monthly <- max_monthly(proj03_max_2050)
+proj04_max_2050_monthly <- max_monthly(proj04_max_2050)
+proj05_max_2050_monthly <- max_monthly(proj05_max_2050)
+proj06_max_2050_monthly <- max_monthly(proj06_max_2050)
+proj07_max_2050_monthly <- max_monthly(proj07_max_2050)
+proj08_max_2050_monthly <- max_monthly(proj08_max_2050)
+proj09_max_2050_monthly <- max_monthly(proj09_max_2050)
+proj10_max_2050_monthly <- max_monthly(proj10_max_2050)
+proj11_max_2050_monthly <- max_monthly(proj11_max_2050)
+proj12_max_2050_monthly <- max_monthly(proj12_max_2050)
+proj13_max_2050_monthly <- max_monthly(proj13_max_2050)
+proj14_max_2050_monthly <- max_monthly(proj14_max_2050)
+proj15_max_2050_monthly <- max_monthly(proj15_max_2050)
+proj16_max_2050_monthly <- max_monthly(proj16_max_2050)
+
+
+max_2050_combined_monthly <- rbind(proj01_max_2050_monthly, proj02_max_2050_monthly, 
+                           proj03_max_2050_monthly, proj04_max_2050_monthly, 
+                           proj05_max_2050_monthly, proj06_max_2050_monthly, 
+                           proj07_max_2050_monthly, proj08_max_2050_monthly, 
+                           proj09_max_2050_monthly, proj10_max_2050_monthly, 
+                           proj11_max_2050_monthly, proj12_max_2050_monthly, 
+                           proj13_max_2050_monthly, proj14_max_2050_monthly, 
+                           proj15_max_2050_monthly, proj16_max_2050_monthly) %>% 
+  mutate(proj_year = as.factor(2050)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+```
+
+
+## 2085
+
+
+```{r}
+
+proj01_max_2085_monthly <- max_monthly(proj01_max_2085)
+proj02_max_2085_monthly <- max_monthly(proj02_max_2085)
+proj03_max_2085_monthly <- max_monthly(proj03_max_2085)
+proj04_max_2085_monthly <- max_monthly(proj04_max_2085)
+proj05_max_2085_monthly <- max_monthly(proj05_max_2085)
+proj06_max_2085_monthly <- max_monthly(proj06_max_2085)
+proj07_max_2085_monthly <- max_monthly(proj07_max_2085)
+proj08_max_2085_monthly <- max_monthly(proj08_max_2085)
+proj09_max_2085_monthly <- max_monthly(proj09_max_2085)
+proj10_max_2085_monthly <- max_monthly(proj10_max_2085)
+proj11_max_2085_monthly <- max_monthly(proj11_max_2085)
+proj12_max_2085_monthly <- max_monthly(proj12_max_2085)
+proj13_max_2085_monthly <- max_monthly(proj13_max_2085)
+proj14_max_2085_monthly <- max_monthly(proj14_max_2085)
+proj15_max_2085_monthly <- max_monthly(proj15_max_2085)
+proj16_max_2085_monthly <- max_monthly(proj16_max_2085)
+
+
+max_2085_combined_monthly <- rbind(proj01_max_2085_monthly, proj02_max_2085_monthly, 
+                           proj03_max_2085_monthly, proj04_max_2085_monthly, 
+                           proj05_max_2085_monthly, proj06_max_2085_monthly, 
+                           proj07_max_2085_monthly, proj08_max_2085_monthly, 
+                           proj09_max_2085_monthly, proj10_max_2085_monthly, 
+                           proj11_max_2085_monthly, proj12_max_2085_monthly, 
+                           proj13_max_2085_monthly, proj14_max_2085_monthly, 
+                           proj15_max_2085_monthly, proj16_max_2085_monthly) %>% 
+  mutate(proj_year = as.factor(2085)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+```
+
+
+## Figures
+
+```{r}
+
+all_monthly_models <- rbind(max_hist_combined_monthly, max_2030_combined_monthly, max_2050_combined_monthly, max_2085_combined_monthly)
+
+plot_proj_year_monthly <- ggplot(all_monthly_models, aes(monthly_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by Projection Period for All Models - Monthly Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("monthly max figs/overall_monthly.png")
+
+
+plot_proj_year_monthly
+
+plot_proj_year_monthly_GCMfacet <- ggplot(all_monthly_models, aes(monthly_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  facet_wrap(~GCM) +
+  ggtitle("CDF by Projection Period for All Models - Monthly Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("monthly max figs/overall_monthly_GCMfacet.png")
+
+
+plot_by_RCP <- ggplot(all_monthly_models, aes(monthly_max, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by RCP Model - Monthly Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("monthly max figs/overall_monthly_RCP.png")
+
+
+plot_by_RCP
+
+plot_by_GCM <- ggplot(all_monthly_models, aes(monthly_max, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by GCM Model - Monthly Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("monthly max figs/overall_monthly_GCM.png")
+
+```
+
+
+
+# Seasonal maximums
+
+
+*Meteorologically-defined seasons:*
+- Spring: March 1 - May 31
+- Summer: June 1 - August 31
+- Fall: Sep 1 - Nov 30
+- Winter: Dec 1 - Feb 28
+
+max_seasonal function parameters:
+- x = raw data set
+- a = lower bound year
+- b = upper bound year
+- y = projection year
+- z = RCP
+- m = model name
+
+## Historical
+```{r}
+
+
+max_seasonal <- function(x, a, b, p, r, m) {
+  annual_max <- x %>% 
+  filter(YEAR > a) %>% 
+  filter(YEAR < b) %>%
+  select(YEAR, MONTH, HMETTOT) %>%
+  mutate(PROJ = p) %>% 
+  mutate(RCP = r) %>% 
+  mutate(GCM = m) %>% 
+  mutate(YEAR = ifelse(MONTH == 12, YEAR+1, YEAR)) %>% # coerce December into following year
+  filter(YEAR != max(YEAR)) %>%  # filter out maximum year; don't want to include it
+  filter(YEAR > a+1) %>% 
+  mutate(SEASON = ifelse(MONTH == 12 | MONTH == 1 | MONTH == 2, "Winter",
+                         ifelse(MONTH == 3 | MONTH == 4 | MONTH == 5, "Spring",
+                                ifelse(MONTH == 6 | MONTH == 7 | MONTH == 8, "Summer",
+                                       ifelse(MONTH == 9 | MONTH == 10 | MONTH == 11, "Fall",
+                                              NA))))) %>% # assign season names to seasonal date ranges
+  group_by(YEAR, PROJ, RCP, GCM, SEASON) %>% 
+  summarize(seasonal_max = max(HMETTOT)) %>% 
+  ungroup()
+    
+}
+
+
+
+proj01_max_hist_seasonal <- max_seasonal(proj01_raw.txt, 1978, 2010, 01, 4.5, "ACCESS")
+proj02_max_hist_seasonal <- max_seasonal(proj02_raw.txt, 1978, 2010, 02, 4.5, "CanESM2")
+proj03_max_hist_seasonal <- max_seasonal(proj03_raw.txt, 1978, 2010, 03, 4.5, "CMCC-CMS")
+proj04_max_hist_seasonal <- max_seasonal(proj04_raw.txt, 1978, 2010, 04, 4.5, "CNRM-CM5")
+proj05_max_hist_seasonal <- max_seasonal(proj05_raw.txt, 1978, 2010, 05, 4.5, "GFDL-CM3")
+proj06_max_hist_seasonal <- max_seasonal(proj06_raw.txt, 1978, 2010, 06, 4.5, "HadGEM2-CC")
+proj07_max_hist_seasonal <- max_seasonal(proj07_raw.txt, 1978, 2010, 07, 4.5, "HadGEM2-ES")
+proj08_max_hist_seasonal <- max_seasonal(proj08_raw.txt, 1978, 2010, 08, 4.5, "MIROC5")
+proj09_max_hist_seasonal <- max_seasonal(proj09_raw.txt, 1978, 2010, 09, 8.5, "ACCESS")
+proj10_max_hist_seasonal <- max_seasonal(proj10_raw.txt, 1978, 2010, 10, 8.5, "CanESM2")
+proj11_max_hist_seasonal <- max_seasonal(proj11_raw.txt, 1978, 2010, 11, 8.5, "CMCC-CMS")
+proj12_max_hist_seasonal <- max_seasonal(proj12_raw.txt, 1978, 2010, 12, 8.5, "CNRM-CM5")
+proj13_max_hist_seasonal <- max_seasonal(proj13_raw.txt, 1978, 2010, 13, 8.5, "GFDL-CM3")
+proj14_max_hist_seasonal <- max_seasonal(proj14_raw.txt, 1978, 2010, 14, 8.5, "HadGEM2-CC")
+proj15_max_hist_seasonal <- max_seasonal(proj15_raw.txt, 1978, 2010, 15, 8.5, "HadGEM2-ES")
+proj16_max_hist_seasonal <- max_seasonal(proj16_raw.txt, 1978, 2010, 16, 8.5, "MIROC5")
+
+
+
+max_hist_combined_seasonal <- rbind(proj01_max_hist_seasonal, proj02_max_hist_seasonal, 
+                           proj03_max_hist_seasonal, proj04_max_hist_seasonal, 
+                           proj05_max_hist_seasonal, proj06_max_hist_seasonal, 
+                           proj07_max_hist_seasonal, proj08_max_hist_seasonal, 
+                           proj09_max_hist_seasonal, proj10_max_hist_seasonal, 
+                           proj11_max_hist_seasonal, proj12_max_hist_seasonal, 
+                           proj13_max_hist_seasonal, proj14_max_hist_seasonal, 
+                           proj15_max_hist_seasonal, proj16_max_hist_seasonal) %>% 
+  mutate(proj_year = as.factor(1995)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+#proj_test <- proj01_max_hist %>%
+#  filter(YEAR == 1990 | MONTH == 12) %>% 
+#  filter(YEAR == 1989 | MONTH == 1 | MONTH == 2) 
+
+```
+
+
+## 2030
+```{r}
+
+ 
+proj01_max_2030_seasonal <- max_seasonal(proj01_raw.txt, 2013, 2045, 01, 4.5, "ACCESS")
+proj02_max_2030_seasonal <- max_seasonal(proj02_raw.txt, 2013, 2045, 02, 4.5, "CanESM2")
+proj03_max_2030_seasonal <- max_seasonal(proj03_raw.txt, 2013, 2045, 03, 4.5, "CMCC-CMS")
+proj04_max_2030_seasonal <- max_seasonal(proj04_raw.txt, 2013, 2045, 04, 4.5, "CNRM-CM5")
+proj05_max_2030_seasonal <- max_seasonal(proj05_raw.txt, 2013, 2045, 05, 4.5, "GFDL-CM3")
+proj06_max_2030_seasonal <- max_seasonal(proj06_raw.txt, 2013, 2045, 06, 4.5, "HadGEM2-CC")
+proj07_max_2030_seasonal <- max_seasonal(proj07_raw.txt, 2013, 2045, 07, 4.5, "HadGEM2-ES")
+proj08_max_2030_seasonal <- max_seasonal(proj08_raw.txt, 2013, 2045, 08, 4.5, "MIROC5")
+proj09_max_2030_seasonal <- max_seasonal(proj09_raw.txt, 2013, 2045, 09, 8.5, "ACCESS")
+proj10_max_2030_seasonal <- max_seasonal(proj10_raw.txt, 2013, 2045, 10, 8.5, "CanESM2")
+proj11_max_2030_seasonal <- max_seasonal(proj11_raw.txt, 2013, 2045, 11, 8.5, "CMCC-CMS")
+proj12_max_2030_seasonal <- max_seasonal(proj12_raw.txt, 2013, 2045, 12, 8.5, "CNRM-CM5")
+proj13_max_2030_seasonal <- max_seasonal(proj13_raw.txt, 2013, 2045, 13, 8.5, "GFDL-CM3")
+proj14_max_2030_seasonal <- max_seasonal(proj14_raw.txt, 2013, 2045, 14, 8.5, "HadGEM2-CC")
+proj15_max_2030_seasonal <- max_seasonal(proj15_raw.txt, 2013, 2045, 15, 8.5, "HadGEM2-ES")
+proj16_max_2030_seasonal <- max_seasonal(proj16_raw.txt, 2013, 2045, 16, 8.5, "MIROC5")
+
+
+
+max_2030_combined_seasonal <- rbind(proj01_max_2030_seasonal, proj02_max_2030_seasonal, 
+                           proj03_max_2030_seasonal, proj04_max_2030_seasonal, 
+                           proj05_max_2030_seasonal, proj06_max_2030_seasonal, 
+                           proj07_max_2030_seasonal, proj08_max_2030_seasonal, 
+                           proj09_max_2030_seasonal, proj10_max_2030_seasonal, 
+                           proj11_max_2030_seasonal, proj12_max_2030_seasonal, 
+                           proj13_max_2030_seasonal, proj14_max_2030_seasonal, 
+                           proj15_max_2030_seasonal, proj16_max_2030_seasonal) %>% 
+  mutate(proj_year = as.factor(2030)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+#proj_test <- proj01_max_hist %>%
+#  filter(YEAR == 1990 | MONTH == 12) %>% 
+#  filter(YEAR == 1989 | MONTH == 1 | MONTH == 2) 
+
+```
+
+
+## 2050
+```{r}
+
+ 
+proj01_max_2050_seasonal <- max_seasonal(proj01_raw.txt, 2033, 2065, 01, 4.5, "ACCESS")
+proj02_max_2050_seasonal <- max_seasonal(proj02_raw.txt, 2033, 2065, 02, 4.5, "CanESM2")
+proj03_max_2050_seasonal <- max_seasonal(proj03_raw.txt, 2033, 2065, 03, 4.5, "CMCC-CMS")
+proj04_max_2050_seasonal <- max_seasonal(proj04_raw.txt, 2033, 2065, 04, 4.5, "CNRM-CM5")
+proj05_max_2050_seasonal <- max_seasonal(proj05_raw.txt, 2033, 2065, 05, 4.5, "GFDL-CM3")
+proj06_max_2050_seasonal <- max_seasonal(proj06_raw.txt, 2033, 2065, 06, 4.5, "HadGEM2-CC")
+proj07_max_2050_seasonal <- max_seasonal(proj07_raw.txt, 2033, 2065, 07, 4.5, "HadGEM2-ES")
+proj08_max_2050_seasonal <- max_seasonal(proj08_raw.txt, 2033, 2065, 08, 4.5, "MIROC5")
+proj09_max_2050_seasonal <- max_seasonal(proj09_raw.txt, 2033, 2065, 09, 8.5, "ACCESS")
+proj10_max_2050_seasonal <- max_seasonal(proj10_raw.txt, 2033, 2065, 10, 8.5, "CanESM2")
+proj11_max_2050_seasonal <- max_seasonal(proj11_raw.txt, 2033, 2065, 11, 8.5, "CMCC-CMS")
+proj12_max_2050_seasonal <- max_seasonal(proj12_raw.txt, 2033, 2065, 12, 8.5, "CNRM-CM5")
+proj13_max_2050_seasonal <- max_seasonal(proj13_raw.txt, 2033, 2065, 13, 8.5, "GFDL-CM3")
+proj14_max_2050_seasonal <- max_seasonal(proj14_raw.txt, 2033, 2065, 14, 8.5, "HadGEM2-CC")
+proj15_max_2050_seasonal <- max_seasonal(proj15_raw.txt, 2033, 2065, 15, 8.5, "HadGEM2-ES")
+proj16_max_2050_seasonal <- max_seasonal(proj16_raw.txt, 2033, 2065, 16, 8.5, "MIROC5")
+
+
+
+max_2050_combined_seasonal <- rbind(proj01_max_2050_seasonal, proj02_max_2050_seasonal, 
+                           proj03_max_2050_seasonal, proj04_max_2050_seasonal, 
+                           proj05_max_2050_seasonal, proj06_max_2050_seasonal, 
+                           proj07_max_2050_seasonal, proj08_max_2050_seasonal, 
+                           proj09_max_2050_seasonal, proj10_max_2050_seasonal, 
+                           proj11_max_2050_seasonal, proj12_max_2050_seasonal, 
+                           proj13_max_2050_seasonal, proj14_max_2050_seasonal, 
+                           proj15_max_2050_seasonal, proj16_max_2050_seasonal) %>% 
+  mutate(proj_year = as.factor(2050)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+
+#proj_test <- proj01_max_hist %>%
+#  filter(YEAR == 1990 | MONTH == 12) %>% 
+#  filter(YEAR == 1989 | MONTH == 1 | MONTH == 2) 
+
+```
 
 
 
 
+## 2085
+```{r}
+
+ 
+proj01_max_2085_seasonal <- max_seasonal(proj01_raw.txt, 2068, 2100, 01, 4.5, "ACCESS")
+proj02_max_2085_seasonal <- max_seasonal(proj02_raw.txt, 2068, 2100, 02, 4.5, "CanESM2")
+proj03_max_2085_seasonal <- max_seasonal(proj03_raw.txt, 2068, 2100, 03, 4.5, "CMCC-CMS")
+proj04_max_2085_seasonal <- max_seasonal(proj04_raw.txt, 2068, 2100, 04, 4.5, "CNRM-CM5")
+proj05_max_2085_seasonal <- max_seasonal(proj05_raw.txt, 2068, 2100, 05, 4.5, "GFDL-CM3")
+proj06_max_2085_seasonal <- max_seasonal(proj06_raw.txt, 2068, 2100, 06, 4.5, "HadGEM2-CC")
+proj07_max_2085_seasonal <- max_seasonal(proj07_raw.txt, 2068, 2100, 07, 4.5, "HadGEM2-ES")
+proj08_max_2085_seasonal <- max_seasonal(proj08_raw.txt, 2068, 2100, 08, 4.5, "MIROC5")
+proj09_max_2085_seasonal <- max_seasonal(proj09_raw.txt, 2068, 2100, 09, 8.5, "ACCESS")
+proj10_max_2085_seasonal <- max_seasonal(proj10_raw.txt, 2068, 2100, 10, 8.5, "CanESM2")
+proj11_max_2085_seasonal <- max_seasonal(proj11_raw.txt, 2068, 2100, 11, 8.5, "CMCC-CMS")
+proj12_max_2085_seasonal <- max_seasonal(proj12_raw.txt, 2068, 2100, 12, 8.5, "CNRM-CM5")
+proj13_max_2085_seasonal <- max_seasonal(proj13_raw.txt, 2068, 2100, 13, 8.5, "GFDL-CM3")
+proj14_max_2085_seasonal <- max_seasonal(proj14_raw.txt, 2068, 2100, 14, 8.5, "HadGEM2-CC")
+proj15_max_2085_seasonal <- max_seasonal(proj15_raw.txt, 2068, 2100, 15, 8.5, "HadGEM2-ES")
+proj16_max_2085_seasonal <- max_seasonal(proj16_raw.txt, 2068, 2100, 16, 8.5, "MIROC5")
+
+
+
+max_2085_combined_seasonal <- rbind(proj01_max_2085_seasonal, proj02_max_2085_seasonal, 
+                           proj03_max_2085_seasonal, proj04_max_2085_seasonal, 
+                           proj05_max_2085_seasonal, proj06_max_2085_seasonal, 
+                           proj07_max_2085_seasonal, proj08_max_2085_seasonal, 
+                           proj09_max_2085_seasonal, proj10_max_2085_seasonal, 
+                           proj11_max_2085_seasonal, proj12_max_2085_seasonal, 
+                           proj13_max_2085_seasonal, proj14_max_2085_seasonal, 
+                           proj15_max_2085_seasonal, proj16_max_2085_seasonal) %>% 
+  mutate(proj_year = as.factor(2085)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+ 
+
+#proj_test <- proj01_max_hist %>%
+#  filter(YEAR == 1990 | MONTH == 12) %>% 
+#  filter(YEAR == 1989 | MONTH == 1 | MONTH == 2) 
+
+```
+
+
+## Seasonal Figures
+
+```{r}
+
+all_seasonal_models <- rbind(max_hist_combined_seasonal, max_2030_combined_seasonal, max_2050_combined_seasonal, max_2085_combined_seasonal)
+
+plot_proj_year_seasonal <- ggplot(all_seasonal_models, aes(seasonal_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by Projection Period for All Models - Seasonal Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("seasonal max figs/overall_seasonal.png")
+
+
+plot_proj_year_seasonal
+
+plot_proj_year_seasonal_GCMfacet <- ggplot(all_seasonal_models, aes(seasonal_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  facet_wrap(~GCM) +
+  ggtitle("CDF by Projection Period for All Models - Seasonal Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("seasonal max figs/overall_seasonal_GCMfacet.png")
+
+plot_proj_year_seasonal_facet <- ggplot(all_seasonal_models, aes(seasonal_max, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  facet_wrap(~SEASON) +
+  ggtitle("CDF by Projection Period for All Models - Seasonal Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("seasonal max figs/overall_seasonal_facet.png")
+
+
+plot_by_RCP <- ggplot(all_seasonal_models, aes(seasonal_max, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by RCP Model - Seasonal Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("seasonal max figs/overall_seasonal_RCP.png")
+
+
+plot_by_RCP
+
+plot_by_GCM <- ggplot(all_seasonal_models, aes(seasonal_max, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by GCM Model - Seasonal Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("seasonal max figs/overall_seasonal_GCM.png")
+
+```
+
+
+
+# Significance testing
+
+```{r}
+
+# Compare future models to historical (using daily max values)
+
+cor.test(max_hist_combined$HMETTOTmax, max_2030_combined$HMETTOTmax, method="kendall") # tau= 0.006, z = 3.7583, p=0.0001711
+
+cor.test(max_hist_combined$HMETTOTmax, max_2050_combined$HMETTOTmax, method="kendall") # tau = 0.0096, z = 6.02, p<0.000001
+
+cor.test(max_hist_combined$HMETTOTmax, max_2085_combined$HMETTOTmax, method="kendall") # not running because the HMETOTTmax values have different lengths; 2085 model is missing one value for each model (16 total)? WHY
+
+
+
+# Compare future models to historical (annual max values)
+
+cor.test(max_hist_combined_annual$HMETTOTmax, max_2030_combined_annual$HMETTOTmax, method="kendall") 
+
+cor.test(max_hist_combined_annual$HMETTOTmax, max_2050_combined_annual$HMETTOTmax, method="kendall") 
+
+cor.test(max_hist_combined_annual$HMETTOTmax, max_2085_combined_annual$HMETTOTmax, method="kendall") 
+
+
+
+```
 
 
 
