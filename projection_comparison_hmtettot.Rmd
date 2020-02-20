@@ -16,6 +16,7 @@ library(tidyverse)
 library(here)
 library(readr)
 
+
 ```
 
 
@@ -1169,40 +1170,179 @@ plot_by_GCM <- ggplot(all_seasonal_models, aes(seasonal_max, colour = GCM)) + st
 
 
 
-# Significance testing
+# Linear regression and significance testing
+
+## Annual *maxmima* for each model/scenario
 
 ```{r}
 
-# Compare future models to historical (using daily max values)
+max_annual_overall <- function(x, z) { # Inputs/parameters: x = df name, z = proj ID
+  proj_max <- x %>% 
+  filter(YEAR > 1999) %>% 
+  select(YEAR, HMETTOT) %>%
+  group_by(YEAR) %>% 
+  summarize(max = max(HMETTOT)) %>% 
+  ungroup()
 
-cor.test(max_hist_combined$HMETTOTmax, max_2030_combined$HMETTOTmax, method="kendall") # tau= 0.006, z = 3.7583, p=0.0001711
-
-cor.test(max_hist_combined$HMETTOTmax, max_2050_combined$HMETTOTmax, method="kendall") # tau = 0.0096, z = 6.02, p<0.000001
-
-cor.test(max_hist_combined$HMETTOTmax, max_2085_combined$HMETTOTmax, method="kendall") # not running because the HMETOTTmax values have different lengths; 2085 model is missing one value for each model (16 total)? WHY
+}
 
 
+proj01_max <- max_annual_overall(proj01_raw.txt) %>% 
+  rename("01" = max)
+proj02_max <- max_annual_overall(proj02_raw.txt) %>% 
+  rename("02" = max)
+proj03_max <- max_annual_overall(proj03_raw.txt) %>% 
+  rename("03" = max)
+proj04_max <- max_annual_overall(proj04_raw.txt) %>% 
+  rename("04" = max)
+proj05_max <- max_annual_overall(proj05_raw.txt) %>% 
+  rename("05" = max)
+proj06_max <- max_annual_overall(proj06_raw.txt) %>% 
+  rename("06" = max)
+proj07_max <- max_annual_overall(proj07_raw.txt) %>% 
+  rename("07" = max)
+proj08_max <- max_annual_overall(proj08_raw.txt) %>% 
+  rename("08" = max)
+proj09_max <- max_annual_overall(proj09_raw.txt) %>% 
+  rename("09" = max)
+proj10_max <- max_annual_overall(proj10_raw.txt) %>% 
+  rename("10" = max)
+proj11_max <- max_annual_overall(proj11_raw.txt) %>% 
+  rename("11" = max)
+proj12_max <- max_annual_overall(proj12_raw.txt) %>% 
+  rename("12" = max)
+proj13_max <- max_annual_overall(proj13_raw.txt) %>% 
+  rename("13" = max)
+proj14_max <- max_annual_overall(proj14_raw.txt) %>% 
+  rename("14" = max)
+proj15_max <- max_annual_overall(proj15_raw.txt) %>% 
+  rename("15" = max)
+proj16_max <- max_annual_overall(proj16_raw.txt) %>% 
+  rename("16" = max)
 
-# Compare future models to historical (annual max values)
 
-cor.test(max_hist_combined_annual$HMETTOTmax, max_2030_combined_annual$HMETTOTmax, method="kendall") 
 
-cor.test(max_hist_combined_annual$HMETTOTmax, max_2050_combined_annual$HMETTOTmax, method="kendall") 
 
-cor.test(max_hist_combined_annual$HMETTOTmax, max_2085_combined_annual$HMETTOTmax, method="kendall") 
+# Combine all separate dfs into one, with each column representing max HMETTOT by year for each model (WIDE)
 
+max_annual_combined <- left_join(proj01_max, proj02_max, by = "YEAR") %>% 
+  left_join(proj03_max, by="YEAR") %>% 
+  left_join(proj04_max, by="YEAR") %>% 
+  left_join(proj05_max, by="YEAR") %>% 
+  left_join(proj06_max, by="YEAR") %>% 
+  left_join(proj07_max, by="YEAR") %>% 
+  left_join(proj08_max, by="YEAR") %>% 
+  left_join(proj09_max, by="YEAR") %>% 
+  left_join(proj10_max, by="YEAR") %>% 
+  left_join(proj11_max, by="YEAR") %>% 
+  left_join(proj12_max, by="YEAR") %>% 
+  left_join(proj13_max, by="YEAR") %>% 
+  left_join(proj14_max, by="YEAR") %>% 
+  left_join(proj15_max, by="YEAR") %>% 
+  left_join(proj16_max, by="YEAR")
+
+
+```
+
+
+### Linear regression and significance for annual maxima
+
+```{r}
+
+
+max_lms <- lapply(max_annual_combined[-1], function(x) summary(lm(x ~ max_annual_combined$YEAR)))
+
+
+lapply(max_annual_combined[-1], function(x) cor.test(x, max_annual_combined$YEAR, method="kendall"))
 
 
 ```
 
 
 
+## Annual *means* for each model/scenario
+
+
+```{r}
+
+
+mean_annual_overall <- function(x, z) { # Inputs/parameters: x = df name
+  proj_max <- x %>% 
+  filter(YEAR > 1999) %>% 
+  select(YEAR, HMETTOT) %>%
+  group_by(YEAR) %>% 
+  summarize(mean = mean(HMETTOT)) %>% 
+  ungroup()
+
+}
+
+proj01_mean <- mean_annual_overall(proj01_raw.txt) %>% 
+  rename("01" = mean)
+proj02_mean <- mean_annual_overall(proj02_raw.txt) %>% 
+  rename("02" = mean)
+proj03_mean <- mean_annual_overall(proj03_raw.txt) %>% 
+  rename("03" = mean)
+proj04_mean <- mean_annual_overall(proj04_raw.txt) %>% 
+  rename("04" = mean)
+proj05_mean <- mean_annual_overall(proj05_raw.txt) %>% 
+  rename("05" = mean)
+proj06_mean <- mean_annual_overall(proj06_raw.txt) %>% 
+  rename("06" = mean)
+proj07_mean <- mean_annual_overall(proj07_raw.txt) %>% 
+  rename("07" = mean)
+proj08_mean <- mean_annual_overall(proj08_raw.txt) %>% 
+  rename("08" = mean)
+proj09_mean <- mean_annual_overall(proj09_raw.txt) %>% 
+  rename("09" = mean)
+proj10_mean <- mean_annual_overall(proj10_raw.txt) %>% 
+  rename("10" = mean)
+proj11_mean <- mean_annual_overall(proj11_raw.txt) %>% 
+  rename("11" = mean)
+proj12_mean <- mean_annual_overall(proj12_raw.txt) %>% 
+  rename("12" = mean)
+proj13_mean <- mean_annual_overall(proj13_raw.txt) %>% 
+  rename("13" = mean)
+proj14_mean <- mean_annual_overall(proj14_raw.txt) %>% 
+  rename("14" = mean)
+proj15_mean <- mean_annual_overall(proj15_raw.txt) %>% 
+  rename("15" = mean)
+proj16_mean <- mean_annual_overall(proj16_raw.txt) %>% 
+  rename("16" = mean)
 
 
 
+# Combine all separate dfs into one, with each column representing mean HMETTOT by year for each model (WIDE)
+
+mean_annual_combined <- left_join(proj01_mean, proj02_mean, by = "YEAR") %>%
+  left_join(proj03_mean, by="YEAR") %>% 
+  left_join(proj04_mean, by="YEAR") %>% 
+  left_join(proj05_mean, by="YEAR") %>% 
+  left_join(proj06_mean, by="YEAR") %>% 
+  left_join(proj07_mean, by="YEAR") %>% 
+  left_join(proj08_mean, by="YEAR") %>% 
+  left_join(proj09_mean, by="YEAR") %>% 
+  left_join(proj10_mean, by="YEAR") %>% 
+  left_join(proj11_mean, by="YEAR") %>% 
+  left_join(proj12_mean, by="YEAR") %>% 
+  left_join(proj13_mean, by="YEAR") %>% 
+  left_join(proj14_mean, by="YEAR") %>% 
+  left_join(proj15_mean, by="YEAR") %>% 
+  left_join(proj16_mean, by="YEAR")
 
 
 
+```
+
+## Linear regression and significance testing for annual means
+
+```{r}
+
+lapply(mean_annual_combined[-1], function(x) summary(lm(x ~ mean_annual_combined$YEAR)))
+
+lapply(mean_annual_combined[-1], function(x) cor.test(x, mean_annual_combined$YEAR, method="kendall"))
+
+
+```
 
 
 
