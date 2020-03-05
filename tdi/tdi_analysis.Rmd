@@ -1,0 +1,113 @@
+---
+title: "TDI Max Analysis"
+author: "Molly Williams"
+date: "3/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Load packages and data
+
+```{r}
+
+library(tidyverse)
+library(here)
+library(janitor)
+
+hist_raw <- read_csv(here("tdi/tdi_historical.csv"))
+
+rcp85_2050_raw <- read_csv(here("tdi/tdi_2050_RCP85.csv"))
+
+rcp85_2085_raw <- read_csv(here("tdi/tdi_2085_RCP85.csv"))
+
+rcp45_2085_raw <- read_csv(here("tdi/tdi_2085_RCP45.csv"))
+
+rcp45_2070_raw <- read_csv(here("tdi/tdi_2070_RCP45.csv"))
+
+rcp85_2070_raw <- read_csv(here("tdi/tdi_2070_RCP85.csv"))
+
+
+
+```
+
+Goal: extract five largest flows from every month and compare frequency distribution across months when these high flows occur. Look at whether they increase over the different scenarios.
+
+*Are tidal maximums higher during certain months of the year? Does this trend become more apparent under different future RCP scenarios?* 
+
+```{r}
+
+# Select top 5 flow values for each month under each scenario. 
+hist <- hist_raw %>% 
+  select(Flow = "Flow (cfs)", Year, Month) %>% 
+  group_by(Month) %>%
+  top_n(5, Flow)
+
+
+rcp85_2050 <- rcp85_2050_raw %>% 
+  select(Flow = "Flow (cfs)", Year, Month) %>% 
+  group_by(Month) %>%
+  top_n(5, Flow)
+
+
+rcp85_2085 <- rcp85_2085_raw %>% 
+  select(Flow = "Flow (cfs)", Year, Month) %>% 
+  group_by(Month) %>%
+  top_n(5, Flow)
+
+rcp45_2085 <- rcp45_2085_raw %>% 
+  select(Flow = "Flow (cfs)", Year, Month) %>% 
+  group_by(Month) %>%
+  top_n(5, Flow)
+
+rcp45_2070 <- rcp45_2070_raw %>% 
+  select(Flow = "Flow (cfs)", Year, Month) %>% 
+  group_by(Month) %>%
+  top_n(5, Flow)
+
+rcp85_2070 <- rcp85_2070_raw %>% 
+  select(Flow = "Flow (cfs)", Year, Month) %>% 
+  group_by(Month) %>%
+  top_n(5, Flow)
+
+
+# Histograms 
+par(mfrow = c(2,2))
+hist(hist$Month)
+# same freq for Oct - June, drops for June-Oct
+
+
+hist(rcp85_2050$Month)
+# same freq for Oct - Apr, Apr-June lower, June-Oct = 0
+
+hist(rcp85_2085$Month)
+# freq = 10 for Oct-Apr, 0 for Apr-June, June - Oct = 2
+
+hist(rcp45_2085$Month)
+# freq = 10 for Jan-Apr, Apr-June = 6, June-Oct = 2-1, Oct-Dec = 5
+
+hist(rcp45_2070$Month)
+# freq = 10 for Jan-Apr, Apr-June = 3, June-Oct = 1, Oct-Dec = 12
+
+
+hist(rcp85_2070$Month)
+# freq = 10 for Oct-Apr, Apr-June = 3, June-Aug = 8, Aug-Oct = 1
+
+
+
+
+ggplot(hist, aes(Month)) +
+  geom_histogram(binwidth = 1)
+
+
+ggplot(rcp85_2050, aes(Month)) +
+  geom_histogram(binwidth = 1)
+
+```
+
+
+

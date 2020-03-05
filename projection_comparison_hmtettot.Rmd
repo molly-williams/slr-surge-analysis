@@ -25,7 +25,6 @@ library(readr)
 
 ```{r read_data}
 
-# Option 1: read in raw climate models into separate dfs using a loop (best)
 
 files <- list.files(file.path(here()), pattern = ".txt")
 #i = files[1]
@@ -36,18 +35,6 @@ for (i in 1:length(files)) {
                               col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
                                             "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND")))
 }
-
-
-# want to add a column that indicates which projection it came from
-
-
-
-# Option 2: Load all raw data into a single df (but doesn't differentiate between models) - load plyr first
-
-#raw_data_full = ldply(files, read.table, header = FALSE,
-#                  col.names = c("YEAR","MONTH","DAY","HOUR","HTOT","HAST","HSLR",
-#                                 "HMETTOT","HMETSLP","HMETSST","HMETENSO", "HMETWIND"))
-
 
 
 ```
@@ -261,7 +248,7 @@ max_2050 <- function(x, y, z, m) {
 # again, replace this with a loop when i figure it out... 
 # don't actually need these in separate dfs. Want to write a loop that will combine all of the filtered data into a single df, complete with the projection #s and projection year (end product of this code chunk)
 
-    
+
 proj01_max_2050 <- max_2050(proj01_raw.txt, 01, 4.5, "ACCESS")
 proj02_max_2050 <- max_2050(proj02_raw.txt, 02, 4.5, "CanESM2")
 proj03_max_2050 <- max_2050(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
@@ -335,7 +322,6 @@ max_2085 <- function(x, y, z, m) {
 
 
 
-  
 proj01_max_2085 <- max_2085(proj01_raw.txt, 01, 4.5, "ACCESS")
 proj02_max_2085 <- max_2085(proj02_raw.txt, 02, 4.5, "CanESM2")
 proj03_max_2085 <- max_2085(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
@@ -1249,8 +1235,7 @@ max_annual_combined <- left_join(proj01_max, proj02_max, by = "YEAR") %>%
 
 ```{r}
 
-
-max_lms <- lapply(max_annual_combined[-1], function(x) summary(lm(x ~ max_annual_combined$YEAR)))
+lapply(max_annual_combined[-1], function(x) summary(lm(x ~ max_annual_combined$YEAR)))
 
 
 lapply(max_annual_combined[-1], function(x) cor.test(x, max_annual_combined$YEAR, method="kendall"))
@@ -1346,7 +1331,285 @@ lapply(mean_annual_combined[-1], function(x) cor.test(x, mean_annual_combined$YE
 
 
 
+# Monthly analysis of HMETTOT+HAST 
 
+
+```{r}
+
+max_monthly_hast_hmettot <- function(x, y, z, m) { # Inputs/parameters: x = df name, y = proj #, z = RCP, m = model
+  proj_max <- x %>% 
+  select(YEAR, MONTH, HAST, HMETTOT) %>%
+  mutate(HAST_HMETTOT = HAST+HMETTOT) %>% 
+  group_by(YEAR, MONTH) %>% 
+  summarise(HAST_HMETTOTmax = max(HAST_HMETTOT)) %>% 
+  ungroup() %>%
+  mutate(PROJ = y) %>%  # add column for distinguishing projection
+  mutate(RCP = z) %>% # add column for RCP
+  mutate(GCM = m) # add column for GCM
+
+}
+
+
+proj01_hast_hmettot <- max_monthly_hast_hmettot(proj01_raw.txt, 01, 4.5, "ACCESS")
+proj02_hast_hmettot <- max_monthly_hast_hmettot(proj02_raw.txt, 02, 4.5, "CanESM2")
+proj03_hast_hmettot <- max_monthly_hast_hmettot(proj03_raw.txt, 03, 4.5, "CMCC-CMS")
+proj04_hast_hmettot <- max_monthly_hast_hmettot(proj04_raw.txt, 04, 4.5, "CNRM-CM5")
+proj05_hast_hmettot <- max_monthly_hast_hmettot(proj05_raw.txt, 05, 4.5, "GFDL-CM3")
+proj06_hast_hmettot <- max_monthly_hast_hmettot(proj06_raw.txt, 06, 4.5, "HadGEM2-CC")
+proj07_hast_hmettot <- max_monthly_hast_hmettot(proj07_raw.txt, 07, 4.5, "HadGEM2-ES")
+proj08_hast_hmettot <- max_monthly_hast_hmettot(proj08_raw.txt, 08, 4.5, "MIROC5")
+proj09_hast_hmettot <- max_monthly_hast_hmettot(proj09_raw.txt, 09, 8.5, "ACCESS")
+proj10_hast_hmettot <- max_monthly_hast_hmettot(proj10_raw.txt, 10, 8.5, "CanESM2")
+proj11_hast_hmettot <- max_monthly_hast_hmettot(proj11_raw.txt, 11, 8.5, "CMCC-CMS")
+proj12_hast_hmettot <- max_monthly_hast_hmettot(proj12_raw.txt, 12, 8.5, "CNRM-CM5")
+proj13_hast_hmettot <- max_monthly_hast_hmettot(proj13_raw.txt, 13, 8.5, "GFDL-CM3")
+proj14_hast_hmettot <- max_monthly_hast_hmettot(proj14_raw.txt, 14, 8.5, "HadGEM2-CC")
+proj15_hast_hmettot <- max_monthly_hast_hmettot(proj15_raw.txt, 15, 8.5, "HadGEM2-ES")
+proj16_hast_hmettot <- max_monthly_hast_hmettot(proj16_raw.txt, 16, 8.5, "MIROC5")
+
+
+# Historical
+
+max_hast_hmettot_hist_monthly <- rbind(proj01_hast_hmettot, proj02_hast_hmettot, 
+                           proj03_hast_hmettot, proj04_hast_hmettot, 
+                           proj05_hast_hmettot, proj06_hast_hmettot, 
+                           proj07_hast_hmettot, proj08_hast_hmettot, 
+                           proj09_hast_hmettot, proj10_hast_hmettot, 
+                           proj11_hast_hmettot, proj12_hast_hmettot, 
+                           proj13_hast_hmettot, proj14_hast_hmettot, 
+                           proj15_hast_hmettot, proj16_hast_hmettot) %>% 
+  filter(YEAR > 1979) %>% 
+  filter(YEAR < 2010) %>% 
+  mutate(proj_year = as.factor(1995)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+# 2030
+max_hast_hmettot_2030_monthly <- rbind(proj01_hast_hmettot, proj02_hast_hmettot, 
+                           proj03_hast_hmettot, proj04_hast_hmettot, 
+                           proj05_hast_hmettot, proj06_hast_hmettot, 
+                           proj07_hast_hmettot, proj08_hast_hmettot, 
+                           proj09_hast_hmettot, proj10_hast_hmettot, 
+                           proj11_hast_hmettot, proj12_hast_hmettot, 
+                           proj13_hast_hmettot, proj14_hast_hmettot, 
+                           proj15_hast_hmettot, proj16_hast_hmettot) %>% 
+  filter(YEAR > 2014) %>% 
+  filter(YEAR < 2045) %>% 
+  mutate(proj_year = as.factor(2030)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+# 2050
+max_hast_hmettot_2050_monthly <- rbind(proj01_hast_hmettot, proj02_hast_hmettot, 
+                           proj03_hast_hmettot, proj04_hast_hmettot, 
+                           proj05_hast_hmettot, proj06_hast_hmettot, 
+                           proj07_hast_hmettot, proj08_hast_hmettot, 
+                           proj09_hast_hmettot, proj10_hast_hmettot, 
+                           proj11_hast_hmettot, proj12_hast_hmettot, 
+                           proj13_hast_hmettot, proj14_hast_hmettot, 
+                           proj15_hast_hmettot, proj16_hast_hmettot) %>% 
+  filter(YEAR > 2034) %>% 
+  filter(YEAR < 2065) %>% 
+  mutate(proj_year = as.factor(2050)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+
+
+# 2085
+max_hast_hmettot_2085_monthly <- rbind(proj01_hast_hmettot, proj02_hast_hmettot, 
+                           proj03_hast_hmettot, proj04_hast_hmettot, 
+                           proj05_hast_hmettot, proj06_hast_hmettot, 
+                           proj07_hast_hmettot, proj08_hast_hmettot, 
+                           proj09_hast_hmettot, proj10_hast_hmettot, 
+                           proj11_hast_hmettot, proj12_hast_hmettot, 
+                           proj13_hast_hmettot, proj14_hast_hmettot, 
+                           proj15_hast_hmettot, proj16_hast_hmettot) %>% 
+  filter(YEAR > 2069) %>% 
+  filter(YEAR < 2100) %>% 
+  mutate(proj_year = as.factor(2085)) %>% 
+  mutate(PROJ = as.factor(PROJ)) %>% 
+  mutate(RCP = as.factor(RCP)) %>% 
+  mutate(GCM = as.factor(GCM))
+  
+
+        
+
+```
+
+
+## Figures
+
+```{r}
+
+all_monthly_hast_models <- rbind(max_hast_hmettot_hist_monthly, max_hast_hmettot_2030_monthly, max_hast_hmettot_2050_monthly,max_hast_hmettot_2085_monthly)
+
+plot_proj_year_hast_monthly <- ggplot(all_monthly_hast_models, aes(HAST_HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by Projection Period for All Models - Monthly HAST + HMETTOT Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("hast + hmettot monthly max figs/overall_monthly.png")
+
+
+plot_proj_year_hast_monthly
+
+plot_proj_year_hast_monthly_GCMfacet <- ggplot(all_monthly_hast_models, aes(HAST_HMETTOTmax, colour = proj_year)) + stat_ecdf(geom="step", pad = FALSE) +
+  facet_wrap(~GCM) +
+  ggtitle("CDF by Projection Period for All Models - Monthly HAST + HMETTOT Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("hast + hmettot monthly max figs/overall_monthly_GCMfacet.png")
+
+
+plot_by_RCP <- ggplot(all_monthly_hast_models, aes(HAST_HMETTOTmax, colour = RCP)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by RCP Model - Monthly HAST + HMETTOT Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("hast + hmettot monthly max figs/overall_monthly_RCP.png")
+
+
+plot_by_RCP
+
+plot_by_GCM <- ggplot(all_monthly_hast_models, aes(HAST_HMETTOTmax, colour = GCM)) + stat_ecdf(geom="step", pad = FALSE) +
+  ggtitle("CDF by GCM Model - Monthly HAST + HMETTOT Maximums") +
+  ylab("Non-exceedence probability") +
+  xlab("Meters above mean sea level ") +
+  theme_bw() +
+  ggsave("hast + hmettot monthly max figs/overall_monthly_GCM.png")
+
+```
+
+
+## Significance testing for HAST + HMETTOT
+
+
+
+```{r}
+
+
+proj01_hh <- proj01_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("01" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj02_hh <- proj02_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("02" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj03_hh <- proj03_hast_hmettot %>%
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("03" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj04_hh <- proj04_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("04" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj05_hh <- proj05_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("05" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj06_hh <- proj06_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("06" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj07_hh <- proj07_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("07" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj08_hh <- proj08_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("08" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj09_hh <- proj09_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("09" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj10_hh <- proj10_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("10" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj11_hh <- proj11_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("11" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj12_hh <- proj12_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("12" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj13_hh <- proj13_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("13" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj14_hh <- proj14_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("14" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj15_hh <- proj15_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("15" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+proj16_hh <- proj16_hast_hmettot %>% 
+  select(YEAR, MONTH, HAST_HMETTOTmax) %>% 
+  rename("16" = HAST_HMETTOTmax) %>% 
+  filter(YEAR > 1999)
+
+
+
+
+# Combine all separate dfs into one, with each column representing mean HMETTOT by year for each model (WIDE)
+
+hast_monthly_combined <- left_join(proj01_hh, proj02_hh, by = c("YEAR", "MONTH")) %>% 
+  left_join(proj03_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj04_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj05_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj06_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj07_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj08_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj09_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj10_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj11_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj12_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj13_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj14_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj15_hh, by=c("YEAR", "MONTH")) %>% 
+  left_join(proj16_hh, by=c("YEAR", "MONTH"))
+
+
+
+```
+
+## Linear regression and significance testing for HAST + HMETTOT monthly maxima
+*not sure how to make month and year a single independent variable?*
+
+```{r}
+
+lapply(hast_monthly_combined[-2], function(x) summary(lm(x ~ hast_monthly_combined$MONTH)))
+
+lapply(mean_annual_combined[-1], function(x) cor.test(x, mean_annual_combined$YEAR, method="kendall"))
+
+
+```
 
 
 
