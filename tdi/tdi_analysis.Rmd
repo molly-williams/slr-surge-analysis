@@ -16,96 +16,321 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 
 library(tidyverse)
+library(ggpubr)
 library(here)
-library(janitor)
 
-hist_raw <- read_csv(here("tdi/tdi_historical.csv"))
 
-rcp85_2050_raw <- read_csv(here("tdi/tdi_2050_RCP85.csv"))
+# Add column for water year and water month (Oct = 1, Nov = 2 etc.)
+# Add in missing month data where necessary
 
-rcp85_2085_raw <- read_csv(here("tdi/tdi_2085_RCP85.csv"))
+may <- c(0, NA, NA, NA, 5, 1)
+jun <- c(0, NA, NA, NA, 6, 1)
+jul <- c(0, NA, NA, NA, 7, 1)
+aug <- c(0, NA, NA, NA, 8, 1)
+sep <- c(0, NA, NA, NA, 9, 1)
+oct <- c(0, NA, NA, NA, 10, 1)
+nov <- c(0, NA, NA, NA, 11, 1)
 
-rcp45_2085_raw <- read_csv(here("tdi/tdi_2085_RCP45.csv"))
 
-rcp45_2070_raw <- read_csv(here("tdi/tdi_2070_RCP45.csv"))
+hist <- read_csv(here("tdi/tdi_historical.csv")) %>%
+  na.omit() %>%
+  rbind(jul) %>% 
+  mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
+  mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
+  mutate(month_name = month.abb[Month])
+  
 
-rcp85_2070_raw <- read_csv(here("tdi/tdi_2070_RCP85.csv"))
+rcp85_2050 <- read.csv(here("tdi/tdi_2050_RCP85.csv"),  na = c("", "NA")) %>%
+  na.omit() %>% 
+  rbind(jul) %>% 
+  rbind(aug) %>% 
+  rbind(sep) %>% 
+  rbind(oct) %>% 
+  mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
+  mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
+  mutate(month_name = month.abb[Month])
+
+
+rcp85_2085 <- read_csv(here("tdi/tdi_2085_RCP85.csv"), skip_empty_rows = TRUE) %>%
+  na.omit() %>%
+  rbind(may) %>% 
+  rbind(jun) %>% 
+  mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
+  mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
+  mutate(month_name = month.abb[Month])
+
+
+rcp45_2085 <- read_csv(here("tdi/tdi_2085_RCP45.csv"), skip_empty_rows = TRUE) %>%
+  na.omit() %>% 
+  rbind(jul) %>% 
+  rbind(oct) %>% 
+  rbind(nov) %>% 
+  mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
+  mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
+  mutate(month_name = month.abb[Month])
+
+
+rcp45_2070 <- read_csv(here("tdi/tdi_2070_RCP45.csv"), skip_empty_rows = TRUE) %>%
+  na.omit() %>% 
+  rbind(jul) %>% 
+  rbind(oct) %>% 
+  mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
+  mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
+  mutate(month_name = month.abb[Month])
+
+
+rcp85_2070 <- read_csv(here("tdi/tdi_2070_RCP85.csv"), skip_empty_rows = TRUE) %>%
+  na.omit() %>% 
+  rbind(jul) %>% 
+  rbind(aug) %>% 
+  rbind(oct) %>% 
+  mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
+  mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
+  mutate(month_name = month.abb[Month])
+
 
 
 
 ```
 
-Goal: extract five largest flows from every month and compare frequency distribution across months when these high flows occur. Look at whether they increase over the different scenarios.
 
-*Are tidal maximums higher during certain months of the year? Does this trend become more apparent under different future RCP scenarios?* 
+*Question: Which months are most likely to contain the annual tidal maximums? Is there a trend, and does it change under different future RCP scenarios?* 
+
+
+
+# Histograms for visualization of trend - quick look
 
 ```{r}
 
-# Select top 5 flow values for each month under each scenario. 
-hist <- hist_raw %>% 
-  select(Flow = "Flow (cfs)", Year, Month) %>% 
-  group_by(Month) %>%
-  top_n(5, Flow)
+par(mfrow = c(2, 3))
 
+hist(hist$water_month)
 
-rcp85_2050 <- rcp85_2050_raw %>% 
-  select(Flow = "Flow (cfs)", Year, Month) %>% 
-  group_by(Month) %>%
-  top_n(5, Flow)
+hist(rcp85_2050$water_month)
 
+hist(rcp45_2070$water_month)
 
-rcp85_2085 <- rcp85_2085_raw %>% 
-  select(Flow = "Flow (cfs)", Year, Month) %>% 
-  group_by(Month) %>%
-  top_n(5, Flow)
+hist(rcp85_2070$water_month)
 
-rcp45_2085 <- rcp45_2085_raw %>% 
-  select(Flow = "Flow (cfs)", Year, Month) %>% 
-  group_by(Month) %>%
-  top_n(5, Flow)
+hist(rcp85_2085$water_month)
 
-rcp45_2070 <- rcp45_2070_raw %>% 
-  select(Flow = "Flow (cfs)", Year, Month) %>% 
-  group_by(Month) %>%
-  top_n(5, Flow)
-
-rcp85_2070 <- rcp85_2070_raw %>% 
-  select(Flow = "Flow (cfs)", Year, Month) %>% 
-  group_by(Month) %>%
-  top_n(5, Flow)
-
-
-# Histograms 
-par(mfrow = c(2,2))
-hist(hist$Month)
-# same freq for Oct - June, drops for June-Oct
-
-
-hist(rcp85_2050$Month)
-# same freq for Oct - Apr, Apr-June lower, June-Oct = 0
-
-hist(rcp85_2085$Month)
-# freq = 10 for Oct-Apr, 0 for Apr-June, June - Oct = 2
-
-hist(rcp45_2085$Month)
-# freq = 10 for Jan-Apr, Apr-June = 6, June-Oct = 2-1, Oct-Dec = 5
-
-hist(rcp45_2070$Month)
-# freq = 10 for Jan-Apr, Apr-June = 3, June-Oct = 1, Oct-Dec = 12
-
-
-hist(rcp85_2070$Month)
-# freq = 10 for Oct-Apr, Apr-June = 3, June-Aug = 8, Aug-Oct = 1
+hist(rcp45_2085$water_month)
 
 
 
-
-ggplot(hist, aes(Month)) +
-  geom_histogram(binwidth = 1)
+# All scenarios appear to show the same trend; distributions are not normal
 
 
-ggplot(rcp85_2050, aes(Month)) +
-  geom_histogram(binwidth = 1)
+```
+
+
+# Proper histograms
+
+```{r}
+
+# Tally maxima for each month and create bar plot
+# Add line of data for summer month(s) where none exist, when necessary
+
+
+
+hist_plot <- hist %>%
+  group_by(Month, water_month, month_name) %>% 
+  tally() %>%
+  mutate(n = ifelse(Month==7, 0, n)) %>% # set july data to 0 
+  ggplot(aes(reorder(month_name, water_month), n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 160) +
+  xlab("Month") +
+  ylab("Count") +
+  ggtitle("Annual TDI maxima by month - Historical, 1980-2009") +
+  theme_bw() +
+  ggsave(here("tdi/figures/historical.png"))
+
+  
+rcp45_2070_plot <- rcp45_2070 %>%
+  group_by(Month, water_month, month_name) %>% 
+  tally() %>% 
+  mutate(n = ifelse(Month==7, 0, ifelse(Month==10, 0, n))) %>% # set july and october data to 0
+  ggplot(aes(reorder(month_name, water_month), n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 110) +
+  xlab("Month") +
+  ylab("Count") +
+  ggtitle("Annual TDI maxima by month - RCP 4.5, 2055-2084") +
+  theme_bw() +
+  ggsave(here("tdi/figures/rcp45_2070.png"))
+  
+rcp45_2085_plot <- rcp45_2085 %>%
+  group_by(Month, water_month, month_name) %>% 
+  tally() %>% 
+  mutate(n = ifelse(Month==7, 0, ifelse(Month==10, 0, ifelse(Month==11, 0, n)))) %>% # set july, october and nov data to 0 
+  ggplot(aes(reorder(month_name, water_month), n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 110) +
+  xlab("Month") +
+  ylab("Count") +
+  ggtitle("Annual TDI maxima by month - RCP 4.5, 2070-2099") +
+  theme_bw() +
+  ggsave(here("tdi/figures/rcp45_2085.png"))
+
+rcp85_2050_plot <- rcp85_2050 %>%
+  group_by(Month, water_month, month_name) %>% 
+  tally() %>% 
+  mutate(n = ifelse(Month==7, 0, ifelse(Month==8, 0, ifelse(Month==9, 0, ifelse(Month==10, 0, n))))) %>% # set july, aug, sep and oct data to 0 
+  ggplot(aes(reorder(month_name, water_month), n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 110) +
+  xlab("Month") +
+  ylab("Count") +
+  ggtitle("Annual TDI maxima by month - RCP 8.5, 2035-2064") +
+  theme_bw() +
+  ggsave(here("tdi/figures/rcp85_2050.png"))
+  
+
+rcp85_2070_plot <- rcp85_2070 %>%
+  group_by(Month, water_month, month_name) %>% 
+  tally() %>% 
+  mutate(n = ifelse(Month==7, 0, ifelse(Month==8, 0, ifelse(Month==10, 0, n)))) %>% # set july, aug and october data to 0 
+  ggplot(aes(reorder(month_name, water_month), n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 110) +
+  xlab("Month") +
+  ylab("Count") +
+  ggtitle("Annual TDI maxima by month - RCP 8.5, 2055-2084") +
+  theme_bw() +
+  ggsave(here("tdi/figures/rcp85_2070.png"))
+
+rcp85_2085_plot <- rcp85_2085 %>%
+  group_by(Month, water_month, month_name) %>% 
+  tally() %>%   
+  mutate(n = ifelse(Month==5, 0, ifelse(Month==6, 0, n))) %>% # set july and october data to 0 
+  ggplot(aes(reorder(month_name, water_month), n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 110) +
+  xlab("Month") +
+  ylab("Count") +
+  ggtitle("Annual TDI maxima by month - RCP 8.5, 2070-2099") +
+  theme_bw() +
+  ggsave(here("tdi/figures/rcp85_2085.png"))
+
+
+combined_plot <- ggarrange(hist_plot, rcp45_2070_plot, rcp45_2085_plot, rcp85_2050_plot, rcp85_2070_plot, rcp85_2085_plot) +
+  ggsave(here("tdi/figures/combined.png"))
+
+
+```
+
+
+# Stats 
+## How likely is a random maximum flow value to be drawn from a winter month? Are the highest flow values significantly concentrated in winter months? 
+
+
+```{r}
+
+# Comparison between likelihood of drawing a sample from other seasons? 
+
+# Mean/median doesn't necessarily make sense because can you have a mean month? 
+
+# Bootstrapping because the distribution is not normal; replicating the samples
+
+
+# Historical
+
+set.seed(222)
+bstrap <- c()
+
+for (i in 1:1000){  # Create 1000 bootstrap samples
+
+bsample <- sample(hist$Month,10,replace=T) # calculate the bootstrap estimate
+bestimate <- mean(bsample)
+bstrap <- c(bstrap,bestimate)} #lower bound
+
+
+quantile(bstrap,.025)
+quantile(bstrap,.975)
+
+
+# RCP 8.5: 2050
+
+bstrap <- c()
+
+for (i in 1:1000){  # Create 1000 bootstrap samples
+
+bsample <- sample(rcp85_2050$Month,10,replace=T) #now calculate the bootstrap estimate
+bestimate <- mean(bsample)
+bstrap <- c(bstrap,bestimate)} #lower bound
+
+summary(rcp85_2050$Month)
+quantile(bstrap,.025)
+quantile(bstrap,.975)
+
+
+
+# RCP 4.5: 2070
+
+bstrap <- c()
+
+for (i in 1:1000){  # Create 1000 bootstrap samples
+
+bsample <- sample(rcp45_2070$Month,10,replace=T) #now calculate the bootstrap estimate
+bestimate <- mean(bsample)
+bstrap <- c(bstrap,bestimate)} #lower bound
+
+summary(rcp45_2070$Month)
+quantile(bstrap,.025)
+quantile(bstrap,.975)
+
+
+
+# RCP 8.5: 2070
+
+bstrap <- c()
+
+for (i in 1:1000){  # Create 1000 bootstrap samples
+
+bsample <- sample(rcp85_2070$Month,10,replace=T) #now calculate the bootstrap estimate
+bestimate <- mean(bsample)
+bstrap <- c(bstrap,bestimate)} #lower bound
+
+summary(rcp85_2070$Month)
+quantile(bstrap,.025)
+quantile(bstrap,.975)
+
+
+
+# RCP 8.5: 2085
+
+bstrap <- c()
+
+for (i in 1:1000){  # Create 1000 bootstrap samples
+
+bsample <- sample(rcp85_2085$Month,10,replace=T) #now calculate the bootstrap estimate
+bestimate <- mean(bsample)
+bstrap <- c(bstrap,bestimate)}
+
+summary(rcp85_2085$Month)
+quantile(bstrap,.025)
+quantile(bstrap,.975)
+
+
+
+# RCP 4.5: 2085
+
+bstrap <- c()
+
+for (i in 1:1000){  # Create 1000 bootstrap samples
+
+bsample <- sample(rcp45_2085$Month,10,replace=T) #now calculate the bootstrap estimate
+bestimate <- mean(bsample)
+bstrap <- c(bstrap,bestimate)}
+
+summary(rcp45_2085$Month)
+quantile(bstrap,.025)
+quantile(bstrap,.975)
+
+
+
+
 
 ```
 
