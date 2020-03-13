@@ -45,7 +45,7 @@ rcp45_1 <- read_csv("tdi/RCP45_dailymax.csv") %>%
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(water_year %in% leap_years) %>%
   filter(water_year != 1980) %>% # keeping only complete data years
-  mutate(water_day = rep(1:366, 29)) 
+  mutate(water_day = as.numeric(rep(1:366, 29)))
 
 # Create water day column for data from non-leap years
 rcp45_2 <- read_csv("tdi/RCP45_dailymax.csv") %>% 
@@ -53,7 +53,7 @@ rcp45_2 <- read_csv("tdi/RCP45_dailymax.csv") %>%
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(!water_year %in% leap_years) %>% 
   filter(water_year != 1980) %>% # keeping only complete data years
-  mutate(water_day = rep(1:365, 90))
+  mutate(water_day = as.numeric(rep(1:365, 90)))
 
 # Combine into a single data frame
 rcp45 <- rbind(rcp45_1, rcp45_2)
@@ -67,7 +67,7 @@ rcp85_1 <- read_csv("tdi/RCP85_dailymax.csv") %>%
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(water_year %in% leap_years) %>%
   filter(water_year != 1980) %>% # keeping only complete data years
-  mutate(water_day = rep(1:366, 29)) 
+  mutate(water_day = as.numeric(rep(1:366, 29)))
 
 # Create water day column for data from non-leap years
 rcp85_2 <- read_csv("tdi/RCP85_dailymax.csv") %>% 
@@ -75,7 +75,7 @@ rcp85_2 <- read_csv("tdi/RCP85_dailymax.csv") %>%
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(!water_year %in% leap_years) %>% 
   filter(water_year != 1980) %>% # keeping only complete data years
-  mutate(water_day = rep(1:365, 90)) 
+  mutate(water_day = as.numeric(rep(1:365, 90))) 
 
 # Combine into a single data frame
 rcp85 <- rbind(rcp85_1, rcp85_2)
@@ -123,11 +123,454 @@ function() that asks:
   
 # create a for loop for this? save all of the diff models in csvs , then re-import perform the operations on them
 
-  set.seed(201)
-rnums = rnorm(100)
-runs = rle(rnums > 0)
+
   
   
 ```
+
+
+
+
+# Top 10 flows for each model/scenario (20 total)
+
+
+```{r}
+# Isolate data for ten highest flows from each model/RCP scenario
+
+## Create function
+top10 <- function(x, y) { # Inputs/parameters: x = df name, y = model name
+  model_rcp <- x %>% 
+  select(water_year, water_month, water_day, flow = y) %>%
+  group_by(water_year) %>% 
+  top_n(10, flow) %>% 
+  arrange(water_year, water_day)
+
+}
+
+## Apply function to create new dfs for each model/RCP scenario
+
+access_45 <- top10(rcp45, "ACCESS1-0")
+access_85 <- top10(rcp85, "ACCESS1-0")
+
+CCSM4_45 <- top10(rcp45, "CCSM4")
+CCSM4_85 <- top10(rcp85, "CCSM4")
+
+CESM1_45 <- top10(rcp45, "CESM1-BGC")
+CESM1_85 <- top10(rcp85, "CESM1-BGC")
+
+CMCC_45 <- top10(rcp45, "CMCC-CMS")
+CMCC_85 <- top10(rcp85, "CMCC-CMS")
+
+CMCC_45 <- top10(rcp45, "CMCC-CMS")
+CMCC_85 <- top10(rcp85, "CMCC-CMS")
+
+CNRM_45 <- top10(rcp45, "CNRM-CM5")
+CNRM_85 <- top10(rcp85, "CNRM-CM5")
+
+CanESM2_45 <- top10(rcp45, "CanESM2")
+CanESM2_85 <- top10(rcp85, "CanESM2")
+
+GFDL_45 <- top10(rcp45, "GFDL-CM3")
+GFDL_85 <- top10(rcp85, "GFDL-CM3")
+
+HCC_45 <- top10(rcp45, "HadGEM2-CC")
+HCC_85 <- top10(rcp85, "HadGEM2-CC")
+
+HES_45 <- top10(rcp45, "HadGEM2-ES")
+HES_85 <- top10(rcp85, "HadGEM2-ES")
+
+MIROC5_45 <- top10(rcp45, "MIROC5")
+MIROC5_85 <- top10(rcp85, "MIROC5")
+
+
+```
+
+
+# Select maximum values from individual storms 
+
+
+## Create functions to apply to each model and scenario 
+```{r}
+
+# Determine length of consecutive sequence of water_days and bind to flow data
+
+seqle <- function(x,incr=1) { 
+  if(!is.numeric(x)) x <- as.numeric(x) 
+  n <- length(x)  
+  y <- x[-1L] != x[-n] + incr 
+  i <- c(which(y|is.na(y)),n) 
+  list(lengths = diff(c(0L,i)),
+       values = x[head(c(0L,i)+1L,-1L)]) 
+} 
+
+consec_count <- function(x) { # x = model+RCP data frame
+  df <- x
+  result <- seqle(df$water_day)
+  consec_length <- data.frame(rep = rep(result$lengths, result$lengths))
+  bind_cols(x, consec_length)
+}
+
+# Find maximum flow value within consecutive water_day period
+consec_max <- function(x) {
+  model_rcp <- x %>% 
+  group_by(water_year, water_month, rep) %>% 
+  summarize(flow = max(flow)) %>% 
+  ungroup()
+}
+
+
+```
+
+
+## Apply functions to all individual data frames for each model/scenario
+
+```{r}
+
+# Would love to do this in a loop but can't figure it out...
+
+# dfs <- list(access_45, access_85)
+
+# for (i in seq_along(dfs)) {
+#  dfs[[i]] <- consec_count(df[[i]]) }
+
+
+access_45_max <- access_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "ACCESS1-0") %>% 
+  mutate(rcp = "4.5")
+
+access_45_max <- left_join(access_45_max, access_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+access_85_max <- access_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "ACCESS1-0") %>% 
+  mutate(rcp = "8.5")
+
+access_85_max <- left_join(access_85_max, access_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+
+CCSM4_45_max <- CCSM4_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CCSM4") %>% 
+  mutate(rcp = "4.5")
+
+CCSM4_45_max <- left_join(CCSM4_45_max, CCSM4_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CCSM4_85_max <- CCSM4_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CCSM4") %>% 
+  mutate(rcp = "8.5")
+
+CCSM4_85_max <- left_join(CCSM4_85_max, CCSM4_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CESM1_45_max <- CESM1_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CESM1") %>% 
+  mutate(rcp = "4.5")
+
+CESM1_45_max <- left_join(CESM1_45_max, CESM1_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CESM1_85_max <- CESM1_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CESM1") %>% 
+  mutate(rcp = "8.5")
+
+CESM1_85_max <- left_join(CESM1_85_max, CESM1_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CMCC_45_max <- CMCC_45 %>% 
+  consec_count() %>% 
+  consec_max( ) %>% 
+  mutate(model = "CMCC") %>% 
+  mutate(rcp = "4.5")
+
+CMCC_45_max <- left_join(CMCC_45_max, CMCC_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CMCC_85_max <- CMCC_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CMCC") %>% 
+  mutate(rcp = "8.5") 
+
+CMCC_85_max <- left_join(CMCC_85_max, CMCC_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+
+
+CNRM_45_max <- CNRM_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CNRM") %>% 
+  mutate(rcp = "4.5")  
+
+CNRM_45_max <- left_join(CNRM_45_max, CNRM_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CNRM_85_max <- CNRM_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CNRM") %>% 
+  mutate(rcp = "8.5")
+  
+CNRM_85_max <- left_join(CNRM_85_max, CNRM_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CanESM2_45_max <- CanESM2_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CanESM2") %>% 
+  mutate(rcp = "4.5")
+
+CanESM2_45_max <- left_join(CanESM2_45_max, CanESM2_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+CanESM2_85_max <- CanESM2_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "CanESM2") %>% 
+  mutate(rcp = "8.5")
+  
+CanESM2_85_max <- left_join(CanESM2_85_max, CanESM2_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+  
+
+GFDL_45_max <- GFDL_45 %>%  
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "GFDL") %>% 
+  mutate(rcp = "4.5") 
+
+GFDL_45_max <- left_join(GFDL_45_max, GFDL_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+GFDL_85_max <- GFDL_85 %>%  
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "GFDL") %>% 
+  mutate(rcp = "8.5")
+
+GFDL_85_max <- left_join(GFDL_85_max, GFDL_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+HCC_45_max <- HCC_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "HadGEM2-CC") %>% 
+  mutate(rcp = "4.5") 
+
+HCC_45_max <- left_join(HCC_45_max, HCC_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+HCC_85_max <- HCC_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "HadGEM2-CC") %>% 
+  mutate(rcp = "8.5")
+
+HCC_85_max <- left_join(HCC_85_max, HCC_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+HES_45_max <- HES_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "HadGEM2-ES") %>% 
+  mutate(rcp = "4.5") 
+
+HES_45_max <- left_join(HES_45_max, HES_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+HES_85_max <- HES_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "HadGEM2-ES") %>% 
+  mutate(rcp = "8.5") 
+
+HES_85_max <- left_join(HES_85_max, HES_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+
+MIROC5_45_max <- MIROC5_45 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "MIROC5") %>% 
+  mutate(rcp = "4.5")
+
+MIROC5_45_max <- left_join(MIROC5_45_max, MIROC5_45, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+MIROC5_85_max <- MIROC5_85 %>% 
+  consec_count() %>% 
+  consec_max() %>% 
+  mutate(model = "MIROC5") %>% 
+  mutate(rcp = "8.5")
+
+MIROC5_85_max <- left_join(MIROC5_85_max, MIROC5_85, by = c("flow", "water_year", "water_month")) # retain water_day data
+
+
+max_tdi_all <- rbind(access_45_max, access_85_max, CCSM4_45_max, CCSM4_85_max, CESM1_45_max, CESM1_85_max, CMCC_45_max, CMCC_85_max, CNRM_45_max, CNRM_85_max, CanESM2_45_max, CanESM2_85_max, GFDL_45_max, GFDL_85_max, HCC_45_max, HCC_85_max, HES_45_max, HES_85_max, MIROC5_45_max, MIROC5_85_max)
+
+
+
+
+
+```
+
+
+# Analyze distribution of months through different time period
+
+## Filter and organize data + quick look
+```{r}
+
+
+daily_hist <- max_tdi_all %>% 
+  filter(water_year < 2010)
+
+hist(daily_hist$water_day)
+
+daily_rcp45_2070 <- max_tdi_all %>% 
+  filter(rcp == 4.5) %>% 
+  filter(water_year > 2054) %>% 
+  filter(water_year < 2085)
+
+
+daily_rcp45_2085 <- max_tdi_all %>% 
+  filter(rcp == 4.5) %>% 
+  filter(water_year > 2069)
+
+
+daily_rcp85_2050 <- max_tdi_all %>% 
+  filter(rcp == 8.5) %>% 
+  filter(water_year > 2034) %>% 
+  filter(water_year < 2065)
+
+daily_rcp85_2070 <- max_tdi_all %>% 
+  filter(rcp == 8.5) %>% 
+  filter(water_year > 2054) %>% 
+  filter(water_year < 2085)
+
+daily_rcp85_2085 <- max_tdi_all %>% 
+  filter(rcp == 8.5) %>% 
+  filter(water_year > 2069)
+
+
+
+
+```
+
+
+
+## Visualize distributions
+
+
+```{r}
+
+
+daily_hist_plot <- daily_hist %>%
+  group_by(water_day) %>% 
+  tally() %>%
+  ggplot(aes(water_day, n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 25) +
+  xlab("Water Day (1 = Oct 1)") +
+  ylab("Occurrences") +
+  ggtitle(label = "Annual distribution of TDI maxima", 
+       subtitle = "Daily data, RCP 4.5 and 8.5, 1980-2009") +
+  theme_bw() +
+  ggsave(here("tdi/figures/daily/historical.png"))
+
+daily_hist_plot
+
+
+daily_rcp45_2070_plot <- daily_rcp45_2070 %>%
+  group_by(water_day) %>% 
+  tally() %>%
+  ggplot(aes(water_day, n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 25) +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Occurrences") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 4.5, 2055-2084") +
+  theme_bw() +
+  ggsave(here("tdi/figures/daily/rcp45_2070_daily.png"))
+
+
+daily_rcp45_2085_plot <- daily_rcp45_2085 %>%
+  group_by(water_day) %>% 
+  tally() %>%
+  ggplot(aes(water_day, n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 25) +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Occurrences") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 4.5, 2070-2099") +
+  theme_bw() +
+  ggsave(here("tdi/figures/daily/rcp45_2085_daily.png"))
+
+
+daily_rcp85_2050_plot <- daily_rcp85_2050 %>%
+  group_by(water_day) %>% 
+  tally() %>%
+  ggplot(aes(water_day, n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 25) +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Occurrences") +  
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 8.5, 2035-2064") +
+  theme_bw() +
+  ggsave(here("tdi/figures/daily/rcp85_2050_daily.png"))
+
+
+
+daily_rcp85_2070_plot <- daily_rcp85_2070 %>%
+  group_by(water_day) %>% 
+  tally() %>%
+  ggplot(aes(water_day, n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 25) +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Occurrences") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 8.5, 2055-2084") +
+  theme_bw() +
+  ggsave(here("tdi/figures/daily/rcp85_2070_daily.png"))
+
+
+daily_rcp85_2085_plot <- daily_rcp85_2085 %>%
+  group_by(water_day) %>% 
+  tally() %>%
+  ggplot(aes(water_day, n)) + 
+  geom_col(fill = "gray") +
+  ylim(0, 25) +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Occurrences") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 8.5, 2070-2099") +
+  theme_bw() +
+  ggsave(here("tdi/figures/daily/rcp85_2085_daily.png"))
+
+
+combined_plot <- ggarrange(daily_hist_plot, daily_rcp45_2070_plot, daily_rcp45_2085_plot, daily_rcp85_2050_plot, daily_rcp85_2070_plot, daily_rcp85_2085_plot) +
+  ggsave(here("tdi/figures/daily/combined_daily.png"))
+
+```
+
+
+
+
 
 
