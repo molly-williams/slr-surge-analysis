@@ -19,6 +19,7 @@ library(here)
 library(tidyverse)
 library(lubridate)
 library(janitor)
+library(KernSmooth)
 
 
 # import data and add columns for water year, month and day (Oct 1 = 1, Nov 1 = 32 etc through 365-66 for each year)
@@ -40,7 +41,7 @@ library(janitor)
 leap_years <- c(1980, 1984, 1988, 1992, 1996, 2000, 2004, 2008, 2012, 2016, 2020, 2024, 2028, 2032, 2036, 2040, 2044, 2048, 2052, 2056, 2060, 2064, 2068, 2072, 2076, 2080, 2084, 2088, 2092, 2096)
 
 # Create water day column for data from leap years
-rcp45_1 <- read_csv("tdi/RCP45_dailymax.csv") %>% 
+rcp45_1 <- read_csv("RCP45_dailymax.csv") %>% 
   mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(water_year %in% leap_years) %>%
@@ -48,7 +49,7 @@ rcp45_1 <- read_csv("tdi/RCP45_dailymax.csv") %>%
   mutate(water_day = as.numeric(rep(1:366, 29)))
 
 # Create water day column for data from non-leap years
-rcp45_2 <- read_csv("tdi/RCP45_dailymax.csv") %>% 
+rcp45_2 <- read_csv("RCP45_dailymax.csv") %>% 
   mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(!water_year %in% leap_years) %>% 
@@ -62,7 +63,7 @@ rcp45 <- rbind(rcp45_1, rcp45_2)
 
 ## Repeat for RCP 8.5 data: 
 # Create water day column for data from leap years
-rcp85_1 <- read_csv("tdi/RCP85_dailymax.csv") %>% 
+rcp85_1 <- read_csv("RCP85_dailymax.csv") %>% 
   mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(water_year %in% leap_years) %>%
@@ -70,7 +71,7 @@ rcp85_1 <- read_csv("tdi/RCP85_dailymax.csv") %>%
   mutate(water_day = as.numeric(rep(1:366, 29)))
 
 # Create water day column for data from non-leap years
-rcp85_2 <- read_csv("tdi/RCP85_dailymax.csv") %>% 
+rcp85_2 <- read_csv("RCP85_dailymax.csv") %>% 
   mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   filter(!water_year %in% leap_years) %>% 
@@ -435,44 +436,50 @@ max_tdi_all <- rbind(access_45_max, access_85_max, CCSM4_45_max, CCSM4_85_max, C
 
 
 daily_hist <- max_tdi_all %>% 
-  filter(water_year < 2010)
+  filter(water_year < 2010) %>% 
+  mutate(scenario = "RCP 4.5 & 8.5 1995")
 
-hist(daily_hist$water_day)
+hist(daily_hist$water_day) # quick look
 
 daily_rcp45_2070 <- max_tdi_all %>% 
   filter(rcp == 4.5) %>% 
   filter(water_year > 2054) %>% 
-  filter(water_year < 2085)
+  filter(water_year < 2085) %>% 
+  mutate(scenario = "RCP 4.5 2070")
 
 
 daily_rcp45_2085 <- max_tdi_all %>% 
   filter(rcp == 4.5) %>% 
-  filter(water_year > 2069)
+  filter(water_year > 2069) %>% 
+  mutate(scenario = "RCP 4.5 2085")
 
 
 daily_rcp85_2050 <- max_tdi_all %>% 
   filter(rcp == 8.5) %>% 
   filter(water_year > 2034) %>% 
-  filter(water_year < 2065)
+  filter(water_year < 2065) %>% 
+  mutate(scenario = "RCP 8.5 2050")
+
 
 daily_rcp85_2070 <- max_tdi_all %>% 
   filter(rcp == 8.5) %>% 
   filter(water_year > 2054) %>% 
-  filter(water_year < 2085)
+  filter(water_year < 2085) %>% 
+  mutate(scenario = "RCP 8.5 2070")
+
 
 daily_rcp85_2085 <- max_tdi_all %>% 
   filter(rcp == 8.5) %>% 
-  filter(water_year > 2069)
+  filter(water_year > 2069) %>% 
+  mutate(scenario = "RCP 8.5 2085")
 
-
-
+  
 
 ```
 
 
 
-## Visualize distributions
-
+## Visualize distributions with histograms
 
 ```{r}
 
@@ -488,7 +495,7 @@ daily_hist_plot <- daily_hist %>%
   ggtitle(label = "Annual distribution of TDI maxima", 
        subtitle = "Daily data, RCP 4.5 and 8.5, 1980-2009") +
   theme_bw() +
-  ggsave(here("tdi/figures/daily/historical.png"))
+  ggsave("tdi/figures/daily/historical.png")
 
 daily_hist_plot
 
@@ -567,8 +574,133 @@ daily_rcp85_2085_plot <- daily_rcp85_2085 %>%
 combined_plot <- ggarrange(daily_hist_plot, daily_rcp45_2070_plot, daily_rcp45_2085_plot, daily_rcp85_2050_plot, daily_rcp85_2070_plot, daily_rcp85_2085_plot) +
   ggsave(here("tdi/figures/daily/combined_daily.png"))
 
+
+
+
 ```
 
+
+## Smoothed density plots 
+
+```{r}
+
+daily_hist_density <- daily_hist %>%
+  ggplot(aes(water_day)) + 
+  geom_density() +
+  xlab("Water Day (1 = Oct 1)") +
+  ylab("Density") +
+  ggtitle(label = "Annual distribution of TDI maxima", 
+       subtitle = "Daily data, RCP 4.5 and 8.5, 1980-2009") +
+  theme_bw() +
+  ggsave("tdi/figures/daily/density/historical.png")
+
+  
+daily_rcp45_2070_density <- daily_rcp45_2070 %>%
+  ggplot(aes(water_day)) + 
+  geom_density() +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Density") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 4.5, 2055-2084") +
+  theme_bw() +
+  ggsave("tdi/figures/daily/density/rcp45_2070_daily.png")
+
+
+daily_rcp45_2085_density <- daily_rcp45_2085 %>%
+  ggplot(aes(water_day)) + 
+  geom_density() +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Density") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 4.5, 2070-2099") +
+  theme_bw() +
+  ggsave("tdi/figures/daily/density/rcp45_2085_daily.png")
+
+
+daily_rcp85_2050_density <- daily_rcp85_2050 %>%
+  ggplot(aes(water_day)) + 
+  geom_density() +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Density") +  
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 8.5, 2035-2064") +
+  theme_bw() +
+  ggsave("tdi/figures/daily/density/rcp85_2050_daily.png")
+
+
+
+daily_rcp85_2070_density <- daily_rcp85_2070 %>%
+  ggplot(aes(water_day)) + 
+  geom_density() +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Density") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 8.5, 2055-2084") +
+  theme_bw() +
+  ggsave("tdi/figures/daily/density/rcp85_2070_daily.png")
+
+
+daily_rcp85_2085_plot <- daily_rcp85_2085 %>%
+  ggplot(aes(water_day)) + 
+  geom_density() +
+  xlab("Water Day (1 = Oct 1") +
+  ylab("Density") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data, RCP 8.5, 2070-2099") +
+  theme_bw() +
+  ggsave("tdi/figures/daily/density/rcp85_2085_daily.png")
+
+
+# Alternate option: bkde() in KernSmooth package
+x <- daily_hist$water_day
+est <- bkde(x, bandwidth=0.25)
+plot(est, type="l")
+
+
+# Combine smoothed curves from each time period into one plot 
+
+daily_combined <- rbind(daily_hist, daily_rcp45_2070, daily_rcp45_2085, daily_rcp85_2050, daily_rcp85_2070, daily_rcp85_2085)
+
+density_plot <- daily_combined %>%
+  ggplot() + 
+  geom_density(aes(x = water_day, group=scenario, color=scenario)) +
+  geom_vline(xintercept=1, color = "gray") +
+  geom_text(aes(x=1, label="Oct 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +  
+  geom_vline(xintercept=32, color = "gray") +
+  geom_text(aes(x=32, label="Nov 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=62, color = "gray") +
+  geom_text(aes(x=62, label="Dec 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=93, color = "gray") +
+  geom_text(aes(x=93, label="Jan 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=124, color = "gray") +
+  geom_text(aes(x=124, label="Feb 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=152, color = "gray") +
+  geom_text(aes(x=152, label="Mar 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=183, color = "gray") +
+  geom_text(aes(x=183, label="Apr 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=213, color = "gray") +
+  geom_text(aes(x=213, label="May 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=244, color = "gray") +
+  geom_text(aes(x=244, label="Jun 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=274, color = "gray") +
+  geom_text(aes(x=274, label="Jul 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +  
+  geom_vline(xintercept=305, color = "gray") +
+  geom_text(aes(x=305, label="Aug 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  geom_vline(xintercept=336, color = "gray") +
+  geom_text(aes(x=336, label="Sep 1", y=0.012), colour="gray", angle=90, vjust = 1.2, text=element_text(size=6)) +
+  xlab("Water Day (1 = Oct 1)") +
+  ylab("Density") +
+  ggtitle(label = "Annual distribution of tidal maxima",
+  subtitle = "Daily data projected under one historical and five future scenarios") +
+  theme_classic() +
+  ggsave("tdi/figures/daily/density/combined.png")
+
+  density_plot
+  
+  
+  
+
+```
 
 
 
