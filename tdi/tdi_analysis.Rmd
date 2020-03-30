@@ -32,13 +32,16 @@ oct <- c(0, NA, NA, NA, 10, 1)
 nov <- c(0, NA, NA, NA, 11, 1)
 
 
-hist <- read_csv(here("tdi/tdi_historical.csv")) %>%
+hist <- read_csv("tdi/tdi_historical.csv") %>%
   na.omit() %>%
   rbind(jul) %>% 
   mutate(water_year = ifelse(Month>9, Year+1, Year)) %>% 
   mutate(water_month = ifelse(Month<10, Month+3, ifelse(Month>9, Month-9, Month))) %>% 
   mutate(month_name = month.abb[Month])
-  
+
+hist_mean <- hist %>% 
+  group_by(Year, Month, Day, water_year, water_month) %>% 
+  summarise_at(vars("Flow (cfs)"), funs(mean(., na.rm=TRUE)))
 
 rcp85_2050 <- read.csv(here("tdi/tdi_2050_RCP85.csv"),  na = c("", "NA")) %>%
   na.omit() %>% 
