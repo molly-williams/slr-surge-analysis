@@ -741,6 +741,8 @@ daily_rcp85_2085_plot <- daily_rcp85_2085 %>%
 
 daily_combined <- rbind(daily_hist, daily_rcp45_2030, daily_rcp45_2050, daily_rcp45_2085, daily_rcp85_2030, daily_rcp85_2050, daily_rcp85_2085)
 
+daily_combined %>% write_csv("tdi/daily_max_combined.csv") # added during investigation into data tabulation on 16July
+
 density_plot <- daily_combined %>%
   ggplot() + 
   geom_density(aes(x = water_day, group=scenario, color=scenario)) +
@@ -787,6 +789,7 @@ density_plot <- daily_combined %>%
 ```{r}
 
 # Find annual TDI max for each model and RCP 
+## Grouping by model
 
 annual_max <- all_daily_flows %>% 
   group_by(water_year, model, rcp) %>%
@@ -797,6 +800,37 @@ annual_max <- all_daily_flows %>%
                                 ifelse(water_year > 2069, 2085, NA)))) %>% 
   na.omit(period) %>%  # remove data that don't fall into the time periods of interest
   write_csv("tdi/annual_max_by_period.csv")
+
+annual_max2030 <- all_daily_flows %>% 
+  group_by(water_year, model, rcp) %>%
+  top_n(1, flow) %>%
+  mutate(month_name = month.abb[Month]) %>%
+  filter(water_year > 2014 & water_year < 2045) %>% 
+  na.omit(period) %>%  # remove data that don't fall into the time periods of interest
+  write_csv("tdi/annual_max_by_period2030.csv")
+
+# without accounting for model (grouping by RCP only; for table with percentages of monthly distribution of annual max TDI values)
+## added this on 16 July - was in an uncommited version on my personal laptop!
+annual_max_by_rcp <- all_daily_flows %>% 
+  group_by(water_year, rcp) %>% 
+  top_n(1, flow) %>% 
+  mutate(month_name = month.abb[Month]) %>% 
+  mutate(period = ifelse(water_year <2011, 1996,
+                         ifelse(water_year > 2034 & water_year < 2065, 2050,
+                                ifelse(water_year > 2069, 2085, NA)))) %>% 
+  na.omit(period) %>% # remove data that don't fall within time periods of interest
+  write_csv("tdi/annual_max_by_periodRCP.csv")
+
+
+# Filter/save 2030 period separately because it overlaps with 2050 period
+annual_max_by_rcp2030 <- all_daily_flows %>% 
+  group_by(water_year, rcp) %>% 
+  top_n(1, flow) %>% 
+  mutate(month_name = month.abb[Month]) %>%
+  filter(water_year > 2014 & water_year < 2045) %>% 
+  na.omit(period) %>% # remove data that don't fall within time periods of interest
+  write_csv("tdi/annual_max_by_periodRCP2030.csv")
+
 
 
 
